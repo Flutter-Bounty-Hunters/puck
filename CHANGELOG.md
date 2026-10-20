@@ -1,3 +1,13 @@
+## Unreleased
+
+- Keep closed menu subtrees unmounted and dispose items after collapse.
+- Balance visible circle-edge gaps against screen boundaries instead of center angles.
+
+- Add menu items that spring out from beneath the main puck and collapse on a second tap.
+- Retarget menu springs as the main puck moves, preserving velocity during interruptions.
+- Adapt the visible menu arc near screen edges and corners.
+- Add configurable menu radius and item diameter, with an interactive example.
+
 ## 0.0.1
 
 - Introduce `PuckOverlay` for floating, draggable circular widgets.

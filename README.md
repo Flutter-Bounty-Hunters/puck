@@ -1,8 +1,7 @@
 # puck
 
 A Flutter widget for floating, draggable circular menus inspired by chat heads.
-The first implementation provides the main puck; expanding menu items will come
-later.
+Tap the main puck to spring a circular menu open or closed.
 
 ```dart
 import 'package:puck/puck.dart';
@@ -10,7 +9,15 @@ import 'package:puck/puck.dart';
 SafeArea(
   child: PuckOverlay(
     diameter: 64,
-    onTap: () {},
+    menuItems: [
+      GestureDetector(
+        onTap: () {},
+        child: const ColoredBox(
+          color: Colors.indigo,
+          child: Icon(Icons.home, color: Colors.white),
+        ),
+      ),
+    ],
     puck: const ColoredBox(
       color: Colors.indigo,
       child: Icon(Icons.menu, color: Colors.white),
@@ -36,6 +43,30 @@ Use `initialEdge`, `initialVerticalAlignment` (0–1), `diameter`, and
 `SafeArea` to respect system insets. Bounds are relative to the overlay, so it
 can also live in a smaller panel. Resizing the area repositions the puck against
 its docking edge within the new vertical bounds.
+
+## Expanding menus
+
+Supply `menuItems` with the widgets for each circular item. Items enter the
+widget tree only when the main puck is tapped and are removed after their
+collapse springs settle. Tapping the main
+puck toggles the menu and also calls `onTap`, if provided. Item widgets handle
+their own actions; selecting an item leaves the menu open.
+
+`menuRadius` defaults to 112 logical pixels from the main puck center, and
+`menuItemDiameter` defaults to 48. Expanded items occupy the visible arc of an
+inward-facing circle. They pack closer together near corners and spread out
+where more space is available. Items balance the visible clear space between their circular edges with the
+clear space between the end items and the screen boundaries. In tight corners,
+the 24px horizontal inset takes priority when equal gaps cannot fit at the
+configured radius. Very dense menus or small containers may cause
+items to overlap; choose an appropriate radius, diameter, and item count.
+
+Every menu item uses a two-dimensional spring. Moving the main puck, resizing
+the overlay, or reversing expansion retargets the springs while preserving their
+velocity. Expanded items keep a 24px horizontal gap from the overlay edges (reduced
+only when the container is too narrow). They are constrained to these bounds during
+spring overshoot. Collapsing items return underneath the main puck and stop
+receiving taps. Give items stable keys if their order or membership changes.
 
 ## Development
 

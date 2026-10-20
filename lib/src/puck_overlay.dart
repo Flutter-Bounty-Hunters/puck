@@ -4,8 +4,12 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+import 'spring_puck.dart';
+
 /// The horizontal edge to which a puck docks.
 enum PuckEdge { left, right }
+
+enum _MenuPhase { closed, expanded, collapsing }
 
 /// Places a draggable circular [puck] above [child].
 ///
@@ -22,9 +26,14 @@ class PuckOverlay extends StatefulWidget {
     this.initialEdge = PuckEdge.right,
     this.initialVerticalAlignment = 0.5,
     this.onTap,
+    this.menuItems = const [],
+    this.menuRadius = 112,
+    this.menuItemDiameter = 48,
   }) : assert(diameter > 0 && diameter < double.infinity),
        assert(offscreenFraction >= 0 && offscreenFraction <= 0.5),
-       assert(initialVerticalAlignment >= 0 && initialVerticalAlignment <= 1);
+       assert(initialVerticalAlignment >= 0 && initialVerticalAlignment <= 1),
+       assert(menuRadius > 0 && menuRadius < double.infinity),
+       assert(menuItemDiameter > 0 && menuItemDiameter < double.infinity);
 
   /// Developer-provided content, clipped to a circle of [diameter].
   final Widget puck;
@@ -38,6 +47,15 @@ class PuckOverlay extends StatefulWidget {
   /// Initial vertical position: zero is the top, one is the bottom.
   final double initialVerticalAlignment;
   final VoidCallback? onTap;
+
+  /// Circular menu contents, painted below the main puck. Supply interactive
+  /// widgets (for example, buttons) to handle individual item selections.
+  /// Give items stable keys when inserting or reordering them.
+  final List<Widget> menuItems;
+
+  /// Distance from the main puck center to the expanded menu item centers.
+  final double menuRadius;
+  final double menuItemDiameter;
 
   @override
   State<PuckOverlay> createState() => _PuckOverlayState();
@@ -54,6 +72,10 @@ class _PuckOverlayState extends State<PuckOverlay>
   FrictionSimulation? _vertical;
   late PuckEdge _edge = widget.initialEdge;
   double _targetX = 0;
+  _MenuPhase _menuPhase = _MenuPhase.closed;
+  bool get _expanded => _menuPhase == _MenuPhase.expanded;
+  final Set<Object> _pendingCollapse = {};
+  int _menuGeneration = 0;
 
   double get _left => -widget.diameter * widget.offscreenFraction;
   double get _right => math.max(_left, _size!.width - widget.diameter - _left);
@@ -97,9 +119,153 @@ class _PuckOverlayState extends State<PuckOverlay>
     _ticker.start();
   }
 
+  void _toggleMenu() {
+    setState(() {
+      _menuGeneration++;
+      _pendingCollapse.clear();
+      if (_expanded) {
+        _pendingCollapse.addAll([
+          for (var i = 0; i < widget.menuItems.length; i++)
+            widget.menuItems[i].key ?? i,
+        ]);
+        _menuPhase = _pendingCollapse.isEmpty
+            ? _MenuPhase.closed
+            : _MenuPhase.collapsing;
+      } else {
+        _menuPhase = _MenuPhase.expanded;
+      }
+    });
+    widget.onTap?.call();
+  }
+
+  void _itemCollapsed(Object identity, int generation) {
+    if (_menuPhase != _MenuPhase.collapsing || generation != _menuGeneration) {
+      return;
+    }
+    setState(() {
+      _pendingCollapse.remove(identity);
+      if (_pendingCollapse.isEmpty) _menuPhase = _MenuPhase.closed;
+    });
+  }
+
+  // Reduce the inset only when the container cannot fit the item plus 48px.
+  double _menuInset(double itemDiameter) =>
+      math.min(24, math.max(0, (_size!.width - itemDiameter) / 2));
+
+  // Exact visible arc on the inward semicircle for a given clear edge gap.
+  // Splitting at circle/rectangle intersections also handles narrow containers.
+  (double, double)? _menuArc(Offset center, double half, double gap) {
+    final radius = widget.menuRadius;
+    final inset = math.max(_menuInset(half * 2), gap);
+    final left = half + inset;
+    final right = _size!.width - half - inset;
+    final top = half + gap;
+    final bottom = _size!.height - half - gap;
+    if (left > right || top > bottom) return null;
+    final inward = center.dx < _size!.width / 2 ? 0.0 : math.pi;
+    final start = inward - math.pi / 2;
+    final end = inward + math.pi / 2;
+    final cuts = <double>[start, end];
+    void add(double angle) {
+      for (final shift in [-2 * math.pi, 0.0, 2 * math.pi]) {
+        final value = angle + shift;
+        if (value > start && value < end) cuts.add(value);
+      }
+    }
+
+    for (final x in [left, right]) {
+      final ratio = (x - center.dx) / radius;
+      if (ratio.abs() <= 1) {
+        final angle = math.acos(ratio);
+        add(angle);
+        add(-angle);
+      }
+    }
+    for (final y in [top, bottom]) {
+      final ratio = (y - center.dy) / radius;
+      if (ratio.abs() <= 1) {
+        final angle = math.asin(ratio);
+        add(angle);
+        add(math.pi - angle);
+      }
+    }
+    cuts.sort();
+    (double, double)? best;
+    double? runStart;
+    for (var i = 0; i < cuts.length - 1; i++) {
+      if (cuts[i + 1] - cuts[i] < 1e-10) continue;
+      final middle = (cuts[i] + cuts[i + 1]) / 2;
+      final point =
+          center + Offset(math.cos(middle), math.sin(middle)) * radius;
+      if (point.dx >= left &&
+          point.dx <= right &&
+          point.dy >= top &&
+          point.dy <= bottom) {
+        runStart ??= cuts[i];
+        if (best == null || cuts[i + 1] - runStart > best.$2 - best.$1) {
+          best = (runStart, cuts[i + 1]);
+        }
+      } else {
+        runStart = null;
+      }
+    }
+    return best;
+  }
+
+  List<Offset> _menuTargets(double itemDiameter) {
+    final center = _position + Offset(widget.diameter / 2, widget.diameter / 2);
+    final radius = widget.menuRadius;
+    final half = itemDiameter / 2;
+    final count = widget.menuItems.length;
+    if (count == 0) return const [];
+    // Maximize a shared clear gap: between circular item edges (chord distance)
+    // and between the end items and the actual screen boundaries.
+    var low = 0.0;
+    var high = math.max(_size!.width, _size!.height);
+    var arc = _menuArc(center, half, 0);
+    for (var step = 0; step < 40; step++) {
+      final gap = (low + high) / 2;
+      final candidate = _menuArc(center, half, gap);
+      final ratio = (itemDiameter + gap) / (2 * radius);
+      final spacing = count == 1
+          ? 0.0
+          : ratio <= 1
+          ? 2 * math.asin(ratio)
+          : double.infinity;
+      if (candidate != null &&
+          candidate.$2 - candidate.$1 >= (count - 1) * spacing) {
+        low = gap;
+        arc = candidate;
+      } else {
+        high = gap;
+      }
+    }
+    final start = arc?.$1 ?? 0.0;
+    final end = arc?.$2 ?? start;
+    return List.generate(count, (index) {
+      final fraction = count == 1 ? 0.5 : index / (count - 1);
+      final angle = start + (end - start) * fraction;
+      final point = center + Offset(math.cos(angle), math.sin(angle)) * radius;
+      // If the requested perimeter cannot fit, prioritize visibility.
+      final inset = _menuInset(itemDiameter);
+      return Offset(
+        (point.dx - half).clamp(inset, _size!.width - itemDiameter - inset),
+        (point.dy - half).clamp(0, _size!.height - itemDiameter),
+      );
+    });
+  }
+
   @override
   void didUpdateWidget(covariant PuckOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (_menuPhase == _MenuPhase.collapsing) {
+      final identities = {
+        for (var i = 0; i < widget.menuItems.length; i++)
+          widget.menuItems[i].key ?? i,
+      };
+      _pendingCollapse.retainAll(identities);
+      if (_pendingCollapse.isEmpty) _menuPhase = _MenuPhase.closed;
+    }
     _geometryChanged =
         oldWidget.diameter != widget.diameter ||
         oldWidget.offscreenFraction != widget.offscreenFraction;
@@ -133,11 +299,41 @@ class _PuckOverlayState extends State<PuckOverlay>
           );
         }
         _position = _bounded(_position);
+        final itemDiameter = math.min(
+          widget.menuItemDiameter,
+          math.min(size.width, size.height),
+        );
+        final origin =
+            _position +
+            Offset(
+              (widget.diameter - itemDiameter) / 2,
+              (widget.diameter - itemDiameter) / 2,
+            );
+        final items = widget.menuItems;
+        final generation = _menuGeneration;
+        final targets = _expanded
+            ? _menuTargets(itemDiameter)
+            : const <Offset>[];
         return Stack(
           clipBehavior: Clip.hardEdge,
           fit: StackFit.expand,
           children: [
             widget.child,
+            for (var i = 0; i < widget.menuItems.length; i++)
+              if (_menuPhase != _MenuPhase.closed &&
+                  (_expanded || _pendingCollapse.contains(items[i].key ?? i)))
+                SpringPuck(
+                  key: ValueKey(widget.menuItems[i].key ?? i),
+                  origin: origin,
+                  target: _expanded ? targets[i] : origin,
+                  diameter: itemDiameter,
+                  bounds: size,
+                  horizontalInset: _menuInset(itemDiameter),
+                  expanded: _expanded,
+                  onCollapsed: () =>
+                      _itemCollapsed(items[i].key ?? i, generation),
+                  child: widget.menuItems[i],
+                ),
             Positioned(
               left: _position.dx,
               top: _position.dy,
@@ -146,7 +342,7 @@ class _PuckOverlayState extends State<PuckOverlay>
               child: ClipOval(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: widget.onTap,
+                  onTap: _toggleMenu,
                   onPanDown: (details) {
                     _ticker.stop();
                     _grabOffset = details.localPosition;

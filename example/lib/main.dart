@@ -14,14 +14,23 @@ class PuckDemo extends StatelessWidget {
       appBar: AppBar(title: const Text('Puck playground')),
       body: SafeArea(
         child: PuckOverlay(
-          onTap: () => debugPrint('Puck tapped'),
+          menuItems: [
+            for (final icon in [Icons.home, Icons.search, Icons.settings])
+              Material(
+                color: Colors.indigo,
+                child: IconButton(
+                  onPressed: () => debugPrint('$icon tapped'),
+                  icon: Icon(icon, color: Colors.white),
+                ),
+              ),
+          ],
           puck: const ColoredBox(
             color: Colors.indigo,
             child: Icon(Icons.menu, color: Colors.white),
           ),
           child: const Center(
             child: Text(
-              'Drag or fling the puck.\nTap it to trigger an action.',
+              'Drag or fling the puck.\nTap to open or close the menu.',
               textAlign: TextAlign.center,
             ),
           ),
