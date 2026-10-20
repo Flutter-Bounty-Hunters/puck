@@ -68,6 +68,15 @@ only when the container is too narrow). They are constrained to these bounds dur
 spring overshoot. Collapsing items return underneath the main puck and stop
 receiving taps. Give items stable keys if their order or membership changes.
 
+## Debug anchors
+
+Set `showDebugAnchors: true` to paint small red dots at puck anchor centers.
+Menu dots mark their current spring targets; the main dot shows its docking
+destination during a release and follows the main puck while dragging.
+The visualizer is off by default and does not intercept touches. Use
+`onLongPress` to handle long presses on the main puck. The example uses it to
+toggle the dots.
+
 ## Development
 
 The root project is the reusable Flutter package:

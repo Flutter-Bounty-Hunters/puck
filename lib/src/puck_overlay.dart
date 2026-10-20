@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'spring_puck.dart';
+import 'puck_anchor_painter.dart';
 
 /// The horizontal edge to which a puck docks.
 enum PuckEdge { left, right }
@@ -26,6 +27,8 @@ class PuckOverlay extends StatefulWidget {
     this.initialEdge = PuckEdge.right,
     this.initialVerticalAlignment = 0.5,
     this.onTap,
+    this.onLongPress,
+    this.showDebugAnchors = false,
     this.menuItems = const [],
     this.menuRadius = 112,
     this.menuItemDiameter = 48,
@@ -47,6 +50,14 @@ class PuckOverlay extends StatefulWidget {
   /// Initial vertical position: zero is the top, one is the bottom.
   final double initialVerticalAlignment;
   final VoidCallback? onTap;
+
+  /// Called when the main puck is long-pressed.
+  final VoidCallback? onLongPress;
+
+  /// Paint small red dots at current spring destinations. During dragging the
+  /// main anchor follows the puck; during docking it shows its final position.
+  /// Menu anchors appear only while their pucks are mounted.
+  final bool showDebugAnchors;
 
   /// Circular menu contents, painted below the main puck. Supply interactive
   /// widgets (for example, buttons) to handle individual item selections.
@@ -343,6 +354,7 @@ class _PuckOverlayState extends State<PuckOverlay>
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: _toggleMenu,
+                  onLongPress: widget.onLongPress,
                   onPanDown: (details) {
                     _ticker.stop();
                     _grabOffset = details.localPosition;
@@ -364,6 +376,28 @@ class _PuckOverlayState extends State<PuckOverlay>
                 ),
               ),
             ),
+            if (widget.showDebugAnchors)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: PuckAnchorPainter([
+                      (_ticker.isActive
+                              ? Offset(
+                                  _targetX,
+                                  _vertical!.finalX.clamp(0, _bottom),
+                                )
+                              : _position) +
+                          Offset(widget.diameter / 2, widget.diameter / 2),
+                      for (var i = 0; i < items.length; i++)
+                        if (_menuPhase != _MenuPhase.closed &&
+                            (_expanded ||
+                                _pendingCollapse.contains(items[i].key ?? i)))
+                          (_expanded ? targets[i] : origin) +
+                              Offset(itemDiameter / 2, itemDiameter / 2),
+                    ]),
+                  ),
+                ),
+              ),
           ],
         );
       },

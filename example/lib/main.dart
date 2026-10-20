@@ -3,8 +3,15 @@ import 'package:puck/puck.dart';
 
 void main() => runApp(const PuckDemo());
 
-class PuckDemo extends StatelessWidget {
+class PuckDemo extends StatefulWidget {
   const PuckDemo({super.key});
+
+  @override
+  State<PuckDemo> createState() => _PuckDemoState();
+}
+
+class _PuckDemoState extends State<PuckDemo> {
+  bool _showDebugAnchors = false;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -14,6 +21,9 @@ class PuckDemo extends StatelessWidget {
       appBar: AppBar(title: const Text('Puck playground')),
       body: SafeArea(
         child: PuckOverlay(
+          showDebugAnchors: _showDebugAnchors,
+          onLongPress: () =>
+              setState(() => _showDebugAnchors = !_showDebugAnchors),
           menuItems: [
             for (final icon in [Icons.home, Icons.search, Icons.settings])
               Material(
@@ -30,7 +40,7 @@ class PuckDemo extends StatelessWidget {
           ),
           child: const Center(
             child: Text(
-              'Drag or fling the puck.\nTap to open or close the menu.',
+              'Drag or fling the puck.\nTap to open or close the menu.\nLong-press to toggle anchor dots.',
               textAlign: TextAlign.center,
             ),
           ),

@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add optional red anchor dots and a main-puck long-press callback; long-press the example puck to toggle the dots.
+
 - Keep closed menu subtrees unmounted and dispose items after collapse.
 - Balance visible circle-edge gaps against screen boundaries instead of center angles.
 
