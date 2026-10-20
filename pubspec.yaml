@@ -1,8 +1,7 @@
 name: puck
 description: Floating, draggable pucks that spring to the left or right screen edge.
-version: 1.0.0
-# Remove when the package is ready for publication.
-publish_to: none
+version: 0.0.1
+repository: https://github.com/Flutter-Bounty-Hunters/puck
 
 environment:
   sdk: ^3.13.1
