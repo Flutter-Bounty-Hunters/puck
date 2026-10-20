@@ -1,0 +1,16 @@
+name: puck_example
+description: A playground for the puck Flutter package.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  puck:
+    path: ../
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,17 @@
+name: puck
+description: Floating, draggable pucks that spring to the left or right screen edge.
+version: 1.0.0
+# Remove when the package is ready for publication.
+publish_to: none
+
+environment:
+  sdk: ^3.13.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
