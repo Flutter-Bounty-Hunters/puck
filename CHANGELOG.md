@@ -1,10 +1,6 @@
-## Unreleased
-
+## 0.0.2
 - Add optional red anchor dots and a main-puck long-press callback; long-press the example puck to toggle the dots.
-
-- Keep closed menu subtrees unmounted and dispose items after collapse.
 - Balance visible circle-edge gaps against screen boundaries instead of center angles.
-
 - Add menu items that spring out from beneath the main puck and collapse on a second tap.
 - Retarget menu springs as the main puck moves, preserving velocity during interruptions.
 - Adapt the visible menu arc near screen edges and corners.
