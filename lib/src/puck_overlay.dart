@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'spring_puck.dart';
+import 'puck_cables.dart';
 import 'puck_anchor_painter.dart';
 
 /// The horizontal edge to which a puck docks.
@@ -75,6 +76,7 @@ class PuckOverlay extends StatefulWidget {
 class _PuckOverlayState extends State<PuckOverlay>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker = createTicker(_tick);
+  final _cables = PuckCables();
   Size? _size;
   bool _geometryChanged = false;
   Offset _position = Offset.zero;
@@ -284,6 +286,7 @@ class _PuckOverlayState extends State<PuckOverlay>
 
   @override
   void dispose() {
+    _cables.dispose();
     _ticker.dispose();
     super.dispose();
   }
@@ -330,14 +333,26 @@ class _PuckOverlayState extends State<PuckOverlay>
           fit: StackFit.expand,
           children: [
             widget.child,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: PuckCablePainter(
+                    _cables,
+                    parentBounds: _position & Size.square(widget.diameter),
+                  ),
+                ),
+              ),
+            ),
             for (var i = 0; i < widget.menuItems.length; i++)
               if (_menuPhase != _MenuPhase.closed &&
                   (_expanded || _pendingCollapse.contains(items[i].key ?? i)))
                 SpringPuck(
                   key: ValueKey(widget.menuItems[i].key ?? i),
                   origin: origin,
+                  cables: _cables,
                   target: _expanded ? targets[i] : origin,
                   diameter: itemDiameter,
+                  parentDiameter: widget.diameter,
                   bounds: size,
                   horizontalInset: _menuInset(itemDiameter),
                   expanded: _expanded,
@@ -345,6 +360,8 @@ class _PuckOverlayState extends State<PuckOverlay>
                       _itemCollapsed(items[i].key ?? i, generation),
                   child: widget.menuItems[i],
                 ),
+            // Paint the parent after every menu item, including while their
+            // springs overlap it during expansion and collapse.
             Positioned(
               left: _position.dx,
               top: _position.dy,

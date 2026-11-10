@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  liquid_glass_renderer: ^1.0.0-dev.2
   puck:
     path: ../
 

@@ -34,6 +34,79 @@ Future<void> _mount(
 
 void main() {
   for (final edge in PuckEdge.values) {
+    testWidgets('children paint under $edge parent before moving', (
+      tester,
+    ) async {
+      await _mount(tester, edge: edge);
+      await tester.tap(find.byKey(_main));
+      await tester.pump();
+      final origin = tester.getCenter(find.byKey(_main));
+      for (var i = 0; i < 3; i++) {
+        expect(
+          (tester.getCenter(find.byKey(_item(i))) - origin).distance,
+          lessThan(0.000001),
+        );
+      }
+      // The ticker's first frame establishes its time origin.
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(
+        (tester.getCenter(find.byKey(_item(1))) - origin).distance,
+        lessThan(0.000001),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(
+        (tester.getCenter(find.byKey(_item(1))) - origin).distance,
+        greaterThan(0),
+      );
+      await tester.pumpAndSettle();
+    });
+  }
+
+  testWidgets('collapse disposes children as soon as the parent covers them', (
+    tester,
+  ) async {
+    await _mount(tester, itemCount: 1);
+    await tester.tap(find.byKey(_main));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(_main));
+    await tester.pump();
+    final origin = tester.getCenter(find.byKey(_main));
+    var elapsed = Duration.zero;
+    while (find.byKey(_item(0)).evaluate().isNotEmpty &&
+        elapsed < const Duration(seconds: 1)) {
+      // The previous visible frame must still protrude past the parent.
+      expect(
+        (tester.getCenter(find.byKey(_item(0))) - origin).distance,
+        greaterThan(8),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      elapsed += const Duration(milliseconds: 16);
+    }
+    expect(find.byKey(_item(0), skipOffstage: false), findsNothing);
+    expect(elapsed, lessThan(const Duration(milliseconds: 600)));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('closing during the preparation frame cancels expansion', (
+    tester,
+  ) async {
+    await _mount(tester);
+    await tester.tap(find.byKey(_main));
+    await tester.pump();
+    await tester.tap(find.byKey(_main));
+    await tester.pumpAndSettle();
+    expect(find.byKey(_item(0), skipOffstage: false), findsNothing);
+    await tester.tap(find.byKey(_main));
+    await tester.pump();
+    expect(
+      tester.getCenter(find.byKey(_item(0))),
+      tester.getCenter(find.byKey(_main)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(_item(0)).hitTestable(), findsOneWidget);
+  });
+
+  for (final edge in PuckEdge.values) {
     for (final count in [2, 3, 4]) {
       // At corners, three or more items cannot fit equal 24px clear gaps on
       // the fixed 112px radius. The existing corner tests verify the inset.
