@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import 'puck_rope_style.dart';
+
 /// Geometry shared by the independently animated items and their cable layer.
 class PuckCables extends ChangeNotifier {
   final _items = <Object, ({List<Offset> points, Rect bounds})>{};
@@ -20,11 +22,15 @@ class PuckCables extends ChangeNotifier {
 
 /// Clips only cable strokes, leaving the page and translucent pucks intact.
 class PuckCablePainter extends CustomPainter {
-  PuckCablePainter(this.cables, {required this.parentBounds})
-    : super(repaint: cables);
+  PuckCablePainter(
+    this.cables, {
+    required this.parentBounds,
+    this.style = const PuckRopeStyle(),
+  }) : super(repaint: cables);
 
   final PuckCables cables;
   final Rect parentBounds;
+  final PuckRopeStyle style;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -57,17 +63,17 @@ class PuckCablePainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color = const Color(0x66000000)
+          ..color = style.darkColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
+          ..strokeWidth = style.thickness
           ..strokeCap = StrokeCap.round,
       );
       canvas.drawPath(
         path,
         Paint()
-          ..color = const Color(0xFF89939E)
+          ..color = style.brightColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5
+          ..strokeWidth = style.thickness / 2
           ..strokeCap = StrokeCap.round,
       );
     }

@@ -3,9 +3,60 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:puck/src/puck_cables.dart';
+import 'package:puck/puck.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'ropes default off and can toggle without remounting menu items',
+    (tester) async {
+      bool? show;
+      late StateSetter rebuild;
+      const parent = ValueKey('parent');
+      const item = ValueKey('item');
+      final painter = find.byWidgetPredicate(
+        (widget) => widget is CustomPaint && widget.painter is PuckCablePainter,
+      );
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              rebuild = setState;
+              const puck = ColoredBox(key: parent, color: Color(0xFF0000FF));
+              const items = [ColoredBox(key: item, color: Color(0xFF00FF00))];
+              return show == null
+                  ? const PuckOverlay(
+                      puck: puck,
+                      menuItems: items,
+                      child: SizedBox.expand(),
+                    )
+                  : PuckOverlay(
+                      showRopes: show!,
+                      puck: puck,
+                      menuItems: items,
+                      child: const SizedBox.expand(),
+                    );
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(parent));
+      await tester.pumpAndSettle();
+      expect(painter, findsNothing);
+      final element = tester.element(find.byKey(item));
+      for (final enabled in [true, false, true]) {
+        rebuild(() => show = enabled);
+        await tester.pumpAndSettle();
+        expect(painter, enabled ? findsOneWidget : findsNothing);
+        expect(tester.element(find.byKey(item)), same(element));
+      }
+      await tester.tap(find.byKey(parent));
+      await tester.pumpAndSettle();
+      expect(find.byKey(item, skipOffstage: false), findsNothing);
+    },
+  );
 
   test(
     'only cables are masked by the union of all current puck circles',
@@ -29,12 +80,17 @@ void main() {
         bounds: Rect.fromCircle(center: const Offset(110, 50), radius: 15),
       );
 
-      Future<List<int>> pixelsAt(List<int> xs) async {
+      Future<List<int>> pixelsAt(
+        List<int> xs, {
+        PuckRopeStyle style = const PuckRopeStyle(),
+        int y = 50,
+      }) async {
         final recorder = ui.PictureRecorder();
         final canvas = Canvas(recorder);
         canvas.drawColor(const Color(0xFF20CC40), BlendMode.src);
         PuckCablePainter(
           cables,
+          style: style,
           parentBounds: Rect.fromCircle(
             center: const Offset(20, 50),
             radius: 10,
@@ -50,9 +106,7 @@ void main() {
         final bytes = (await image.toByteData(
           format: ui.ImageByteFormat.rawRgba,
         ))!;
-        final result = [
-          for (final x in xs) bytes.getUint32((50 * 200 + x) * 4),
-        ];
+        final result = [for (final x in xs) bytes.getUint32((y * 200 + x) * 4)];
         image.dispose();
         picture.dispose();
         return result;
@@ -69,6 +123,15 @@ void main() {
       for (final i in [2, 6]) {
         expect(pixels[i], isNot(0x20CC40FF)); // Rope survives between circles.
       }
+
+      const style = PuckRopeStyle(
+        thickness: 12,
+        brightColor: Color(0xFF00FFFF),
+        darkColor: Color(0xFFFF0000),
+      );
+      expect((await pixelsAt([50], style: style)).single, 0x00FFFFFF);
+      expect((await pixelsAt([50], style: style, y: 54)).single, 0xFF0000FF);
+      expect((await pixelsAt([50], style: style, y: 57)).single, 0x20CC40FF);
 
       cables.update(
         'crossing',

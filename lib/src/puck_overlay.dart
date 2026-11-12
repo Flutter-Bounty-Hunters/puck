@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import 'spring_puck.dart';
 import 'puck_cables.dart';
+import 'puck_rope_style.dart';
 import 'puck_anchor_painter.dart';
 
 /// The horizontal edge to which a puck docks.
@@ -30,6 +31,8 @@ class PuckOverlay extends StatefulWidget {
     this.onTap,
     this.onLongPress,
     this.showDebugAnchors = false,
+    this.showRopes = false,
+    this.ropeStyle = const PuckRopeStyle(),
     this.menuItems = const [],
     this.menuRadius = 112,
     this.menuItemDiameter = 48,
@@ -60,6 +63,13 @@ class PuckOverlay extends StatefulWidget {
   /// Menu anchors appear only while their pucks are mounted.
   final bool showDebugAnchors;
 
+  /// Connect menu items to their parent with animated ropes. Off by default.
+  /// Disabled ropes are neither painted nor simulated.
+  final bool showRopes;
+
+  /// Stroke width and colors for ropes when [showRopes] is enabled.
+  final PuckRopeStyle ropeStyle;
+
   /// Circular menu contents, painted below the main puck. Supply interactive
   /// widgets (for example, buttons) to handle individual item selections.
   /// Give items stable keys when inserting or reordering them.
@@ -74,11 +84,39 @@ class PuckOverlay extends StatefulWidget {
 }
 
 class _PuckOverlayState extends State<PuckOverlay>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final Ticker _ticker = createTicker(_tick);
   final _cables = PuckCables();
   Size? _size;
   bool _geometryChanged = false;
+  double _globalTop = 0;
+  double _keyboardHeight = 0;
+  double? _keyboardOriginalY;
+  bool _draggedWithKeyboard = false;
+  SpringSimulation? _returnSpring;
+  double? _returnTargetY;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeMetrics() {
+    // Read the view directly on every metrics change: Scaffold may consume
+    // MediaQuery.viewInsets when it resizes its body for the keyboard.
+    setState(() {});
+  }
+
+  void _measureGlobalTop(Duration _) {
+    if (!mounted) return;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final top = box.localToGlobal(Offset.zero).dy;
+    if (top != _globalTop) setState(() => _globalTop = top);
+  }
+
   Offset _position = Offset.zero;
   Offset? _grabOffset;
   SpringSimulation? _horizontal;
@@ -100,13 +138,17 @@ class _PuckOverlayState extends State<PuckOverlay>
   void _tick(Duration elapsed) {
     final time = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
     final x = _horizontal!;
-    final y = _vertical!;
+    final y = _returnSpring ?? _vertical!;
     setState(() {
       _position = _bounded(Offset(x.x(time), y.x(time)));
       // Contact with a vertical boundary absorbs vertical momentum.
       final hitBoundary = y.x(time) <= 0 || y.x(time) >= _bottom;
-      if (x.isDone(time) && (y.isDone(time) || hitBoundary)) {
-        _position = Offset(_targetX, _position.dy);
+      if (x.isDone(time) &&
+          (y.isDone(time) || (_returnSpring == null && hitBoundary))) {
+        _position = Offset(_targetX, _returnTargetY ?? _position.dy);
+        if (_returnSpring != null) _keyboardOriginalY = null;
+        _returnSpring = null;
+        _returnTargetY = null;
         _ticker.stop();
       }
     });
@@ -114,6 +156,8 @@ class _PuckOverlayState extends State<PuckOverlay>
 
   void _dock(Offset velocity) {
     _ticker.stop();
+    _returnSpring = null;
+    _returnTargetY = null;
     // Momentum carries the puck vertically, while the nearest horizontal edge
     // attracts it. Horizontal release velocity feeds directly into the spring.
     _edge = (_position.dx + widget.diameter / 2 < _size!.width / 2)
@@ -129,6 +173,15 @@ class _PuckOverlayState extends State<PuckOverlay>
     // Strong drag keeps incidental vertical motion from becoming a long glide.
     // FrictionSimulation uses exponential decay: a smaller factor stops sooner.
     _vertical = FrictionSimulation(0.0001, _position.dy, velocity.dy);
+    if (_keyboardHeight == 0 && _keyboardOriginalY != null) {
+      _returnTargetY = _keyboardOriginalY!.clamp(0.0, _bottom);
+      _returnSpring = SpringSimulation(
+        const SpringDescription(mass: 1, stiffness: 220, damping: 26),
+        _position.dy,
+        _returnTargetY!,
+        velocity.dy,
+      );
+    }
     _ticker.start();
   }
 
@@ -286,6 +339,7 @@ class _PuckOverlayState extends State<PuckOverlay>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cables.dispose();
     _ticker.dispose();
     super.dispose();
@@ -299,7 +353,35 @@ class _PuckOverlayState extends State<PuckOverlay>
           constraints.hasBoundedWidth && constraints.hasBoundedHeight,
           'PuckOverlay requires bounded width and height.',
         );
-        final size = constraints.biggest;
+        WidgetsBinding.instance.addPostFrameCallback(_measureGlobalTop);
+        final view = View.of(context);
+        final keyboard = view.viewInsets.bottom / view.devicePixelRatio;
+        final keyboardTop =
+            (view.physicalSize.height / view.devicePixelRatio) - keyboard;
+        // Intersect the keyboard-free viewport with this overlay's area. This
+        // also avoids subtracting the inset twice in an already resized body.
+        final size = Size(
+          constraints.maxWidth,
+          keyboard > 0
+              ? (keyboardTop - _globalTop).clamp(0, constraints.maxHeight)
+              : constraints.maxHeight,
+        );
+        if (_keyboardHeight == 0 && keyboard > 0) {
+          _draggedWithKeyboard = false;
+        }
+        final newBottom = math.max(0.0, size.height - widget.diameter);
+        if (keyboard > 0 &&
+            !_draggedWithKeyboard &&
+            _keyboardOriginalY == null &&
+            _size != null &&
+            _position.dy > newBottom) {
+          _keyboardOriginalY = _position.dy;
+        }
+        final restore =
+            keyboard == 0 &&
+            _keyboardOriginalY != null &&
+            (_keyboardHeight > 0 || _size != size || _geometryChanged);
+        _keyboardHeight = keyboard;
         final firstLayout = _size == null;
         if (_size != size || _geometryChanged) {
           _geometryChanged = false;
@@ -313,6 +395,7 @@ class _PuckOverlayState extends State<PuckOverlay>
           );
         }
         _position = _bounded(_position);
+        if (restore) _dock(Offset.zero);
         final itemDiameter = math.min(
           widget.menuItemDiameter,
           math.min(size.width, size.height),
@@ -333,16 +416,18 @@ class _PuckOverlayState extends State<PuckOverlay>
           fit: StackFit.expand,
           children: [
             widget.child,
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: PuckCablePainter(
-                    _cables,
-                    parentBounds: _position & Size.square(widget.diameter),
+            if (widget.showRopes)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: PuckCablePainter(
+                      _cables,
+                      style: widget.ropeStyle,
+                      parentBounds: _position & Size.square(widget.diameter),
+                    ),
                   ),
                 ),
               ),
-            ),
             for (var i = 0; i < widget.menuItems.length; i++)
               if (_menuPhase != _MenuPhase.closed &&
                   (_expanded || _pendingCollapse.contains(items[i].key ?? i)))
@@ -350,6 +435,7 @@ class _PuckOverlayState extends State<PuckOverlay>
                   key: ValueKey(widget.menuItems[i].key ?? i),
                   origin: origin,
                   cables: _cables,
+                  showRopes: widget.showRopes,
                   target: _expanded ? targets[i] : origin,
                   diameter: itemDiameter,
                   parentDiameter: widget.diameter,
@@ -377,6 +463,11 @@ class _PuckOverlayState extends State<PuckOverlay>
                     _grabOffset = details.localPosition;
                   },
                   onPanUpdate: (details) {
+                    // A deliberate drag supersedes the pre-keyboard location.
+                    _keyboardOriginalY = null;
+                    if (_keyboardHeight > 0) {
+                      _draggedWithKeyboard = true;
+                    }
                     final box = context.findRenderObject()! as RenderBox;
                     setState(() {
                       _position = _bounded(
@@ -401,7 +492,10 @@ class _PuckOverlayState extends State<PuckOverlay>
                       (_ticker.isActive
                               ? Offset(
                                   _targetX,
-                                  _vertical!.finalX.clamp(0, _bottom),
+                                  (_returnTargetY ?? _vertical!.finalX).clamp(
+                                    0,
+                                    _bottom,
+                                  ),
                                 )
                               : _position) +
                           Offset(widget.diameter / 2, widget.diameter / 2),

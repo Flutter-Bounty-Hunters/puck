@@ -12,6 +12,7 @@ class SpringPuck extends StatefulWidget {
     super.key,
     required this.origin,
     required this.cables,
+    required this.showRopes,
     required this.target,
     required this.diameter,
     required this.parentDiameter,
@@ -24,6 +25,7 @@ class SpringPuck extends StatefulWidget {
 
   final Offset origin;
   final PuckCables cables;
+  final bool showRopes;
   final Offset target;
   final double diameter;
   final double parentDiameter;
@@ -49,7 +51,7 @@ class _SpringPuckState extends State<SpringPuck>
   Offset _velocity = Offset.zero;
   SpringSimulation? _x;
   SpringSimulation? _y;
-  final _rope = _MenuRope();
+  _MenuRope? _rope;
   double _lastTime = 0;
   double? _settlingSince;
   bool _prepared = false;
@@ -108,32 +110,39 @@ class _SpringPuckState extends State<SpringPuck>
         widget.onCollapsed();
         return;
       }
-      final half = Offset(widget.diameter / 2, widget.diameter / 2);
-      _rope.advance(
-        widget.origin + half,
-        _visiblePosition + half,
-        math.max((widget.target - widget.origin).distance, widget.diameter),
-        (t - _lastTime).clamp(0, 1 / 15),
-      );
+      if (widget.showRopes) {
+        final half = Offset(widget.diameter / 2, widget.diameter / 2);
+        (_rope ??= _MenuRope()).advance(
+          widget.origin + half,
+          _visiblePosition + half,
+          math.max((widget.target - widget.origin).distance, widget.diameter),
+          (t - _lastTime).clamp(0, 1 / 15),
+        );
+      }
       _lastTime = t;
       if (arrived) {
         _settlingSince ??= t;
-        if (!widget.expanded || _rope.atRest || t - _settlingSince! > 3) {
+        if (!widget.showRopes || _rope!.atRest || t - _settlingSince! > 3) {
           _ticker.stop();
           if (!widget.expanded) widget.onCollapsed();
         }
       }
     });
-    widget.cables.repaint();
+    if (widget.showRopes) widget.cables.repaint();
   }
 
   @override
   void didUpdateWidget(covariant SpringPuck oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.showRopes != widget.showRopes) {
+      _rope = null;
+      if (!widget.showRopes) widget.cables.remove(this);
+    }
     if (_prepared &&
         (oldWidget.target != widget.target ||
             oldWidget.expanded != widget.expanded ||
-            oldWidget.origin != widget.origin)) {
+            oldWidget.origin != widget.origin ||
+            oldWidget.showRopes != widget.showRopes)) {
       _retarget();
     }
   }
@@ -146,24 +155,26 @@ class _SpringPuckState extends State<SpringPuck>
   }
 
   // Use the same endpoint for painting and positioning, including at bounds.
-  Offset get _visiblePosition => widget.expanded && _hasAdvanced
-      ? Offset(
-          _position.dx.clamp(
+  Offset get _visiblePosition => Offset(
+    widget.expanded && _hasAdvanced
+        ? _position.dx.clamp(
             widget.horizontalInset,
             widget.bounds.width - widget.diameter - widget.horizontalInset,
-          ),
-          _position.dy.clamp(0, widget.bounds.height - widget.diameter),
-        )
-      : _position;
+          )
+        : _position.dx,
+    _position.dy.clamp(0, math.max(0, widget.bounds.height - widget.diameter)),
+  );
 
   @override
   Widget build(BuildContext context) {
     final position = _visiblePosition;
-    widget.cables.update(
-      this,
-      points: List.of(_rope.points),
-      bounds: position & Size.square(widget.diameter),
-    );
+    if (widget.showRopes) {
+      widget.cables.update(
+        this,
+        points: List.of(_rope?.points ?? const <Offset>[]),
+        bounds: position & Size.square(widget.diameter),
+      );
+    }
     return Positioned(
       left: position.dx,
       top: position.dy,
