@@ -1,9 +1,22 @@
 ![Puck](https://gist.githubusercontent.com/matthew-carroll/404783cc39137527233a0b2c9d256040/raw/6f0fc1921fa44a40b5a74a43c3b476ad3b9b3a88/puck-banner.png)
 
-# puck
 
-A Flutter widget for floating, draggable circular menus inspired by chat heads.
-Tap the main puck to spring a circular menu open or closed.
+<h1 align="center">Puck</h1>
+
+<p align="center">
+  A Floating Menu for Flutter
+</p>
+
+<p align="center">
+  <a href="https://pub.dev/packages/puck"><img src="https://img.shields.io/pub/v/puck" alt="Pub Version"></a>
+  <a href="https://github.com/Flutter-Bounty-Hunters/puck/actions/workflows/ci.yaml"><img src="https://github.com/Flutter-Bounty-Hunters/puck/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
+  <a href="https://pub.dev/packages/puck/score"><img src="https://img.shields.io/pub/points/puck" alt="Pub Points"></a>
+  <a href="https://pub.dev/packages/puck"><img src="https://img.shields.io/pub/likes/puck" alt="Pub Likes"></a>
+  <a href="https://pub.dev/packages/puck"><img src="https://img.shields.io/pub/dm/puck" alt="Pub Downloads"></a>
+  <a href="https://github.com/Flutter-Bounty-Hunters/puck/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Flutter-Bounty-Hunters/puck" alt="License"></a>
+</p>
+
+---
 
 ```dart
 import 'package:puck/puck.dart';
