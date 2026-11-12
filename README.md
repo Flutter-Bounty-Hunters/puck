@@ -42,7 +42,12 @@ Use `initialEdge`, `initialVerticalAlignment` (0–1), `diameter`, and
 `offscreenFraction` to customize placement and size. Wrap the overlay in
 `SafeArea` to respect system insets. Bounds are relative to the overlay, so it
 can also live in a smaller panel. Resizing the area repositions the puck against
-its docking edge within the new vertical bounds.
+its docking edge within the new vertical bounds. Keyboard height changes also
+update the collision boundary: the parent and menu items stay above the keyboard,
+including when it opens beneath a closed parent. This works whether or not the
+surrounding Scaffold resizes its body for the keyboard. When the keyboard closes,
+the parent springs back to its position before it was pushed upward. Dragging the
+parent while the keyboard is open discards that saved position.
 
 ## Expanding menus
 
@@ -67,6 +72,25 @@ velocity. Expanded items keep a 24px horizontal gap from the overlay edges (redu
 only when the container is too narrow). They are constrained to these bounds during
 spring overshoot. Collapsing items return underneath the main puck and stop
 receiving taps. Give items stable keys if their order or membership changes.
+
+## Ropes
+
+Ropes are optional and disabled by default. Enable them with `showRopes: true`.
+When disabled, rope physics and painting are skipped. Customize the two-tone
+stroke with a const style:
+
+```dart
+showRopes: true,
+ropeStyle: const PuckRopeStyle(
+  thickness: 3,
+  brightColor: Color(0xFF89939E),
+  darkColor: Color(0x66000000),
+),
+```
+
+These are the default style values. Thickness is the total width in logical
+pixels; the bright inner stroke is half that width. Ropes are masked beneath
+all puck circles so other content remains visible through translucent pucks.
 
 ## Debug anchors
 

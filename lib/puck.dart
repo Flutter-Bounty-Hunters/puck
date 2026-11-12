@@ -2,3 +2,4 @@
 library;
 
 export 'src/puck_overlay.dart';
+export 'src/puck_rope_style.dart';
