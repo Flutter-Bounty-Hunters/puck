@@ -3,6 +3,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:puck/puck.dart';
 
 import 'prepared_menu_glass_layer.dart';
+import 'layout_demo.dart' show MenuLayoutDemo;
 
 const _demoTiers = [
   [
@@ -48,6 +49,7 @@ class PuckDemo extends StatefulWidget {
 class _PuckDemoState extends State<PuckDemo> {
   bool _showDebugAnchors = false;
   bool _darkMode = false;
+  bool _showLayoutDemo = false;
   @override
   Widget build(BuildContext context) {
     final brightness = _darkMode ? Brightness.dark : Brightness.light;
@@ -70,58 +72,66 @@ class _PuckDemoState extends State<PuckDemo> {
       ),
       themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
       // Keep the menu above the Navigator, including its app bars and dialogs.
-      builder: (context, child) => Overlay.wrap(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            child!,
-            SafeArea(
-              child: PuckOverlay(
-                maintainMenuState: true,
-                menuTierBuilder: (context, tier, child) =>
-                    PreparedMenuGlassLayer(
-                      settings: glassSettings,
-                      appearance: glassAppearance,
-                      itemCount: _demoTiers[tier].length,
-                      radius: 80.0 + 80 * tier + 4 * tier * (tier + 1),
-                      child: child,
-                    ),
-                showRopes: false,
-                showTierCurves: true,
-                menuRadius: 80,
-                showDebugAnchors: _showDebugAnchors,
-                onLongPress: () =>
-                    setState(() => _showDebugAnchors = !_showDebugAnchors),
-                menuTiers: [
-                  for (final tier in _demoTiers)
-                    [
-                      for (final (icon, label) in tier)
-                        LiquidGlass(
-                          key: ValueKey(label),
-                          shape: const LiquidOval(),
-                          child: Material(
-                            type: MaterialType.transparency,
-                            child: IconButton(
-                              tooltip: label,
-                              onPressed: () => debugPrint('$label tapped'),
-                              icon: Icon(icon, color: iconColor),
-                            ),
+      builder: (context, child) => _showLayoutDemo
+          ? Overlay.wrap(
+              child: MenuLayoutDemo(
+                onBack: () => setState(() => _showLayoutDemo = false),
+              ),
+            )
+          : Overlay.wrap(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  child!,
+                  SafeArea(
+                    child: PuckOverlay(
+                      maintainMenuState: true,
+                      menuTierBuilder: (context, tier, child) =>
+                          PreparedMenuGlassLayer(
+                            settings: glassSettings,
+                            appearance: glassAppearance,
+                            itemCount: _demoTiers[tier].length,
+                            radius: 80.0 + 80 * tier + 4 * tier * (tier + 1),
+                            child: child,
                           ),
-                        ),
-                    ],
+                      showRopes: false,
+                      showTierCurves: true,
+                      menuRadius: 80,
+                      showDebugAnchors: _showDebugAnchors,
+                      onLongPress: () => setState(
+                        () => _showDebugAnchors = !_showDebugAnchors,
+                      ),
+                      menuTiers: [
+                        for (final tier in _demoTiers)
+                          [
+                            for (final (icon, label) in tier)
+                              LiquidGlass(
+                                key: ValueKey(label),
+                                shape: const LiquidOval(),
+                                child: Material(
+                                  type: MaterialType.transparency,
+                                  child: IconButton(
+                                    tooltip: label,
+                                    onPressed: () =>
+                                        debugPrint('$label tapped'),
+                                    icon: Icon(icon, color: iconColor),
+                                  ),
+                                ),
+                              ),
+                          ],
+                      ],
+                      puck: LiquidGlass.withOwnLayer(
+                        settings: glassSettings,
+                        appearance: glassAppearance,
+                        shape: const LiquidOval(),
+                        child: Icon(Icons.menu, color: iconColor),
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
                 ],
-                puck: LiquidGlass.withOwnLayer(
-                  settings: glassSettings,
-                  appearance: glassAppearance,
-                  shape: const LiquidOval(),
-                  child: Icon(Icons.menu, color: iconColor),
-                ),
-                child: const SizedBox.expand(),
               ),
             ),
-          ],
-        ),
-      ),
       home: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -135,6 +145,11 @@ class _PuckDemoState extends State<PuckDemo> {
             onPressed: () => setState(() => _darkMode = !_darkMode),
           ),
           actions: [
+            IconButton(
+              tooltip: 'Explore menu layout',
+              icon: const Icon(Icons.radar),
+              onPressed: () => setState(() => _showLayoutDemo = true),
+            ),
             IconButton(
               tooltip: _showDebugAnchors
                   ? 'Hide debug visuals'

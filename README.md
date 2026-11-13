@@ -32,8 +32,8 @@ Scaffold body. The developer supplies both the page content and the puck widget;
 the puck is sized and clipped to a circle. Other parts of the page continue to
 receive pointer events.
 
-The puck starts halfway down the right edge. Drag it anywhere in the available
-area; release it to spring toward the nearest left or right edge. Fling velocity
+The puck starts halfway down the right edge. Drag it across the available area
+or beyond either side edge; release it to spring toward the nearest docking edge. Fling velocity
 feeds into the horizontal spring and carries the puck vertically with friction.
 The top and bottom absorb vertical movement without allowing the puck to escape.
 Docking hides 10% of the puck's diameter beyond the edge, leaving 90% visible.
@@ -158,7 +158,9 @@ opening and nearest first when closing.
 
 Multi-tier menus share two end-cap directions. Each tier's first and last items
 align with those directions, and its other items use equal angular steps along
-the arc between them. A tier with one item uses the arc midpoint. The shared
+the arc between them. As the arc closes into a ring, spacing becomes uniform
+around the circle without duplicating the first item. A tier with one item uses
+the arc midpoint. The shared
 arc adjusts to keep every tier within the available boundaries. Debug visuals
 show both end-cap lines, tier arcs, and item anchor dots.
 
@@ -167,16 +169,31 @@ one item diameter, plus 8 pixels for each successive tier. For the demo's 80px
 inner radius, the next gaps are 88px, 96px, and so on. Available viewport space
 may compress these distances further.
 
-While an open menu moves against a boundary, it preserves its end-cap angles
-and first squeezes the radial gaps between tiers, down to 50% of their resting
-spacing. Only when that no longer fits does it choose a new arc. The tiers
-spread back out when space becomes available again. While dragging, the shared
-arc also widens immediately as soon as its end caps have room to move outward.
-When room returns, widening the arc takes priority over restoring radial gaps.
+While an open menu moves against a boundary, it first rotates its shared arc
+to use available space, including space beyond the vertical end caps toward a
+side wall. It keeps the tier radii when rotation can preserve the fan's span
+(a semicircle). If rotation is insufficient, it squeezes the radial gaps
+by up to 50%, then narrows the fan when necessary. The fixed inner tier limits
+the useful span, so its boundary collisions do not cause pointless compression.
+The fan widens and the tiers spread back out as space becomes available again.
+In open corridors, arcs can extend beyond 180 degrees and become full 360-degree
+rings when space permits, avoiding a forced switch from one side of the root
+to the other. Perimeter constraints continue to favor smooth rotation.
+Partial arcs and full rings use the same solved radii. Newly available angular
+space unfolds continuously as a third wall clears a tier, without switching
+angle calculations at the full-ring threshold.
+Within the available arc, the two end caps favor balanced wall clearance.
+When opposing walls compete, their combined influence steers the arc through
+the free space, softening exact cap balancing to avoid a sudden side switch.
+Moving away from a barrier restores the ideal orientation instead of keeping
+the rotation previously forced by the barrier.
 
 On release, the menu restores its resting tier distances and chooses its arc at
 the root's final docking destination. The root's spring motion does not trigger
 repeated menu rearrangements while it settles against the wall.
+The layout preview guides follow the root's actual position during that motion;
+the destination anchor remains fixed. The preview uses the same space-aware
+layout before and after release, restoring radii only as room becomes available.
 
 Set `showTierCurves: true` to connect each tier's items with a 6px circular arc.
 The curves track the live spring positions, fade near the root during opening

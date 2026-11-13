@@ -24,6 +24,33 @@ Future<int> alphaAt(PuckTierCurves curves, Offset point) async {
 
 void main() {
   test(
+    'full-circle curves connect the closing gap and retain puck holes',
+    () async {
+      final curves = PuckTierCurves()..fullCircle = true;
+      addTearDown(curves.dispose);
+      final points = [
+        const Offset(200, 100),
+        const Offset(300, 200),
+        const Offset(200, 300),
+        const Offset(100, 200),
+      ];
+      for (var i = 0; i < points.length; i++) {
+        curves.update(
+          i,
+          bounds: Rect.fromCircle(center: points[i], radius: 20),
+          tier: 0,
+          order: i,
+        );
+      }
+      expect(await alphaAt(curves, const Offset(129, 129)), greaterThan(0));
+      expect(await alphaAt(curves, const Offset(271, 129)), greaterThan(0));
+      for (final point in points) {
+        expect(await alphaAt(curves, point), 0);
+      }
+    },
+  );
+
+  test(
     'circular tier arcs cut out translucent pucks and fade near the root',
     () async {
       final curves = PuckTierCurves();

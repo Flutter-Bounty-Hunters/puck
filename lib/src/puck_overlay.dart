@@ -10,6 +10,7 @@ import 'puck_tier_curves.dart';
 import 'puck_cables.dart';
 import 'puck_rope_style.dart';
 import 'puck_anchor_painter.dart';
+import 'puck_layout_preview_painter.dart';
 
 /// The horizontal edge to which a puck docks.
 enum PuckEdge { left, right }
@@ -35,6 +36,7 @@ class PuckOverlay extends StatefulWidget {
     this.showDebugAnchors = false,
     this.showRopes = false,
     this.showTierCurves = false,
+    this.layoutPreview = false,
     this.ropeStyle = const PuckRopeStyle(),
     this.menuItems = const [],
     this.menuTiers = const [],
@@ -77,6 +79,10 @@ class PuckOverlay extends StatefulWidget {
   /// Draw thick curves through each tier's live item centers, clipped around
   /// all pucks. Curves follow the springs and fade near the root. Off by default.
   final bool showTierCurves;
+
+  /// Replace menu items and their springs with radius guides, item-width bands,
+  /// and filled sectors for the solved arc. Uses the same layout rules.
+  final bool layoutPreview;
 
   /// Stroke width and colors for ropes when [showRopes] is enabled.
   final PuckRopeStyle ropeStyle;
@@ -174,29 +180,32 @@ class _PuckOverlayState extends State<PuckOverlay>
   double get _right => math.max(_left, _size!.width - widget.diameter - _left);
   double get _bottom => math.max(0, _size!.height - widget.diameter);
 
-  // Once released, lay out against the docking destination. The root spring
-  // can bounce without feeding those transient positions back into the solver.
-  Offset get _menuPosition => _tiers.length > 1 && _ticker.isActive
+  // Item targets use the stable docking destination. The layout preview shows
+  // geometry at the moving root, including throughout its return spring.
+  Offset get _menuPosition =>
+      !widget.layoutPreview && _tiers.length > 1 && _ticker.isActive
       ? Offset(
           _targetX,
           (_returnTargetY ?? _vertical!.finalX).clamp(0, _bottom),
         )
       : _position;
 
-  Offset _bounded(Offset position) =>
-      Offset(position.dx.clamp(_left, _right), position.dy.clamp(0, _bottom));
+  // Side edges are docking destinations, not drag limits. Preserve horizontal
+  // motion beyond them, including the spring's return from an offscreen release.
+  Offset _constrainVertical(Offset position) =>
+      Offset(position.dx, position.dy.clamp(0, _bottom));
 
   void _tick(Duration elapsed) {
     final time = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
     final x = _horizontal!;
     final y = _returnSpring ?? _vertical!;
     setState(() {
-      _position = _bounded(Offset(x.x(time), y.x(time)));
+      _position = _constrainVertical(Offset(x.x(time), y.x(time)));
       // Contact with a vertical boundary absorbs vertical momentum.
       final hitBoundary = y.x(time) <= 0 || y.x(time) >= _bottom;
       if (x.isDone(time) &&
           (y.isDone(time) || (_returnSpring == null && hitBoundary))) {
-        _position = _bounded(
+        _position = _constrainVertical(
           Offset(_targetX, _returnTargetY ?? _vertical!.finalX),
         );
         if (_returnSpring != null) _keyboardOriginalY = null;
@@ -256,9 +265,11 @@ class _PuckOverlayState extends State<PuckOverlay>
         ..start();
       _pendingCollapse.clear();
       if (!expanded) {
-        _pendingCollapse.addAll([
-          for (var i = 0; i < _items.length; i++) _items[i].key ?? i,
-        ]);
+        if (!widget.layoutPreview) {
+          _pendingCollapse.addAll([
+            for (var i = 0; i < _items.length; i++) _items[i].key ?? i,
+          ]);
+        }
         _menuPhase = _pendingCollapse.isEmpty
             ? _MenuPhase.closed
             : _MenuPhase.collapsing;
@@ -354,6 +365,7 @@ class _PuckOverlayState extends State<PuckOverlay>
     int count,
     double radius, {
     (double, double)? sharedArc,
+    int tier = 0,
   }) {
     final center =
         _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
@@ -383,9 +395,24 @@ class _PuckOverlayState extends State<PuckOverlay>
     }
     final start = arc?.$1 ?? 0.0;
     final end = arc?.$2 ?? start;
+    var first = count == 1 ? (start + end) / 2 : start;
+    var spacing = count == 1 ? 0.0 : (end - start) / (count - 1);
+    final ringSpacing = 2 * math.pi / count;
+    if (count > 1 && spacing >= ringSpacing - 1e-8) {
+      // Close the ring without duplicating its endpoints. Equivalent cyclic
+      // phases let items keep their positions as the arc crosses its seam.
+      spacing = ringSpacing;
+      final lastFirst = math.max(start, end - (count - 1) * spacing);
+      final previous = _tierPhases[tier] ?? (start + lastFirst) / 2;
+      final shift =
+          ((previous - (start + lastFirst) / 2) / spacing).round() * spacing;
+      first = previous.clamp(start + shift, lastFirst + shift);
+    } else if (count == 1 && end - start >= 2 * math.pi - 1e-8) {
+      first = _tierPhases[tier] ?? first;
+    }
+    _tierPhases[tier] = first;
     return List.generate(count, (index) {
-      final fraction = count == 1 ? 0.5 : index / (count - 1);
-      final angle = start + (end - start) * fraction;
+      final angle = first + spacing * index;
       final point = center + Offset(math.cos(angle), math.sin(angle)) * radius;
       // If the requested perimeter cannot fit, prioritize visibility.
       final inset = _menuInset(itemDiameter);
@@ -427,57 +454,269 @@ class _PuckOverlayState extends State<PuckOverlay>
     return [near, for (final gap in gaps) radius += gap * scale];
   }
 
-  // All rings use the intersection of their visible angular intervals.
-  // Keep a small fixed boundary clearance; maximize spacing between items
-  // without turning that extra space into padding against the docking wall.
-  (double, double)? _sharedMenuArc(double diameter, List<double> radii) {
+  // Find the widest shared arc anywhere around the root, up to maxSpan.
+  // For a rectangular viewport, checking the inner and outer rings also covers
+  // every intermediate ring: their points lie between those two endpoints.
+  (double, double)? _sharedMenuArc(
+    double diameter,
+    List<double> radii, {
+    bool balance = true,
+    double maxSpan = math.pi,
+  }) {
+    if (radii.isEmpty) return null;
     final center =
         _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
-    final tiers = _tiers;
-    (double, double)? available() {
-      var start = double.negativeInfinity;
-      var end = double.infinity;
-      for (final radius in radii) {
-        final arc = _menuArc(center, diameter / 2, 4, radius);
-        if (arc == null) return null;
-        start = math.max(start, arc.$1);
-        end = math.min(end, arc.$2);
-      }
-      return start <= end ? (start, end) : null;
+    final half = diameter / 2;
+    final inset = math.max(_menuInset(diameter), 4.0);
+    final left = half + inset;
+    final right = _size!.width - half - inset;
+    final top = half + 4;
+    final bottom = _size!.height - half - 4;
+    if (left > right || top > bottom) return null;
+    const turn = 2 * math.pi;
+    final rings = [radii.first, if (radii.last != radii.first) radii.last];
+    final cuts = <double>[0, turn];
+    void add(double angle) {
+      final a = angle % turn;
+      if (a > 1e-10 && a < turn - 1e-10) cuts.add(a);
     }
 
-    var best = available();
-    var low = 0.0;
-    var high = _size!.longestSide;
-    for (var step = 0; step < 40; step++) {
-      final gap = (low + high) / 2;
-      final arc = best;
-      var fits = arc != null;
-      for (var tier = 0; fits && tier < tiers.length; tier++) {
-        final count = tiers[tier].length;
-        if (count <= 1) continue;
-        final ratio = (diameter + gap) / (2 * radii[tier]);
-        fits =
-            ratio <= 1 &&
-            (count - 1) * 2 * math.asin(ratio) <= arc!.$2 - arc.$1;
+    for (final radius in rings) {
+      for (final x in [left, right]) {
+        final ratio = (x - center.dx) / radius;
+        if (ratio.abs() <= 1) {
+          final a = math.acos(ratio);
+          add(a);
+          add(-a);
+        }
       }
-      if (fits) {
-        low = gap;
-        best = arc;
-      } else {
-        high = gap;
+      for (final y in [top, bottom]) {
+        final ratio = (y - center.dy) / radius;
+        if (ratio.abs() <= 1) {
+          final a = math.asin(ratio);
+          add(a);
+          add(math.pi - a);
+        }
       }
     }
-    return best;
+    cuts.sort();
+    final runs = <(double, double)>[];
+    for (var i = 0; i < cuts.length - 1; i++) {
+      if (cuts[i + 1] - cuts[i] < 1e-10) continue;
+      final a = (cuts[i] + cuts[i + 1]) / 2;
+      final direction = Offset(math.cos(a), math.sin(a));
+      if (!rings.every((r) {
+        final p = center + direction * r;
+        return p.dx >= left - 1e-8 &&
+            p.dx <= right + 1e-8 &&
+            p.dy >= top - 1e-8 &&
+            p.dy <= bottom + 1e-8;
+      })) {
+        continue;
+      }
+      if (runs.isNotEmpty && runs.last.$2 == cuts[i]) {
+        runs[runs.length - 1] = (runs.last.$1, cuts[i + 1]);
+      } else {
+        runs.add((cuts[i], cuts[i + 1]));
+      }
+    }
+    // Join a visible run that crosses the zero-angle seam.
+    if (runs.length > 1 && runs.first.$1 == 0 && runs.last.$2 == turn) {
+      runs[0] = (runs.last.$1, runs.first.$2 + turn);
+      runs.removeLast();
+    }
+    // Opposing walls contribute continuously instead of switching the preferred
+    // side at the viewport midpoint. Near the top, this turns left -> down ->
+    // right as the root crosses the screen (and mirrors near the bottom).
+    final reach = _restingRadii?.last ?? radii.last;
+    final leftPressure = math.max(0.0, reach - (center.dx - left));
+    final rightPressure = math.max(0.0, reach - (right - center.dx));
+    final topPressure = math.max(0.0, reach - (center.dy - top));
+    final bottomPressure = math.max(0.0, reach - (bottom - center.dy));
+    // Walls still steer the fan after the resting ring clears them. A hard
+    // zero outside that ring removes all vertical preference in free space,
+    // causing a left/right flip as opposing side pressures cross equality.
+    // This smooth falloff retains the direction toward the larger clearance.
+    final softness = radii.first;
+    double influence(double distance) {
+      final overlap = reach - distance;
+      return (overlap + math.sqrt(overlap * overlap + softness * softness)) / 2;
+    }
+
+    final pressure = Offset(
+      influence(center.dx - left) - influence(right - center.dx),
+      influence(center.dy - top) - influence(bottom - center.dy),
+    );
+    final inward = center.dx < _size!.width / 2 ? 0.0 : math.pi;
+    final preferred = pressure.distanceSquared < 1e-12
+        ? inward
+        : inward +
+              math.atan2(
+                math.sin(pressure.direction - inward),
+                math.cos(pressure.direction - inward),
+              );
+    (double, double)? best;
+    var bestWidth = -1.0;
+    var bestDistance = double.infinity;
+    var bestMinimum = 0.0;
+    var bestMaximum = 0.0;
+    for (final run in runs) {
+      final width = math.min(maxSpan, run.$2 - run.$1);
+      final fullCircle = run.$2 - run.$1 >= turn - 1e-8;
+      final shift = ((preferred - (run.$1 + run.$2) / 2) / turn).round() * turn;
+      final minimum = fullCircle
+          ? preferred - math.pi
+          : run.$1 + shift + width / 2;
+      final maximum = fullCircle
+          ? preferred + math.pi
+          : math.max(minimum, run.$2 + shift - width / 2);
+      final middle = preferred.clamp(minimum, maximum);
+      final distance = (middle - preferred).abs();
+      if (width > bestWidth + 1e-8 ||
+          ((width - bestWidth).abs() <= 1e-8 && distance < bestDistance)) {
+        best = (middle - width / 2, middle + width / 2);
+        bestWidth = width;
+        bestDistance = distance;
+        bestMinimum = minimum;
+        bestMaximum = maximum;
+      }
+    }
+    if (best == null || !balance || bestMaximum - bestMinimum < 1e-10) {
+      return best;
+    }
+
+    final width = best.$2 - best.$1;
+    double clearance(double angle) {
+      final direction = Offset(math.cos(angle), math.sin(angle));
+      var gap = double.infinity;
+      for (final r in rings) {
+        final p = center + direction * r;
+        gap = math.min(
+          gap,
+          math.min(
+            math.min(p.dx - left, right - p.dx),
+            math.min(p.dy - top, bottom - p.dy),
+          ),
+        );
+      }
+      return gap;
+    }
+
+    double difference(double middle) =>
+        clearance(middle - width / 2) - clearance(middle + width / 2);
+    var chosen = (best.$1 + best.$2) / 2;
+    var error = difference(chosen).abs();
+    if (error < 1e-7) return best;
+    void consider(double middle) {
+      final candidateError = difference(middle).abs();
+      final balanced = candidateError < .001;
+      final wasBalanced = error < .001;
+      if ((balanced && !wasBalanced) ||
+          (balanced &&
+              wasBalanced &&
+              (middle - preferred).abs() < (chosen - preferred).abs()) ||
+          (!balanced && !wasBalanced && candidateError < error)) {
+        chosen = middle;
+        error = candidateError;
+      }
+    }
+
+    // Find balanced cap clearances near the direction of available space.
+    var previous = bestMinimum;
+    var previousValue = difference(previous);
+    consider(previous);
+    for (var step = 1; step <= 16; step++) {
+      final current = bestMinimum + (bestMaximum - bestMinimum) * step / 16;
+      final value = difference(current);
+      consider(current);
+      if (previousValue * value < 0) {
+        var low = previous;
+        var high = current;
+        var lowValue = previousValue;
+        for (var iteration = 0; iteration < 20; iteration++) {
+          final middle = (low + high) / 2;
+          final middleValue = difference(middle);
+          if (lowValue * middleValue <= 0) {
+            high = middle;
+          } else {
+            low = middle;
+            lowValue = middleValue;
+          }
+        }
+        consider((low + high) / 2);
+      }
+      previous = current;
+      previousValue = value;
+    }
+    // Exact equality can have two separated solutions when opposite walls
+    // compete. Fade that correction as their influence becomes equal, keeping
+    // the continuous space-driven orientation instead of flipping solutions.
+    double dominance(double a, double b) =>
+        a == 0 || b == 0 ? 1 : math.min(1.0, 2 * (a - b).abs() / (a + b));
+    final correction = math.min(
+      dominance(leftPressure, rightPressure),
+      dominance(topPressure, bottomPressure),
+    );
+    final ideal = (best.$1 + best.$2) / 2;
+    final middle = ideal + (chosen - ideal) * correction;
+    return (middle - width / 2, middle + width / 2);
   }
 
   Object? _menuLayoutKey;
   List<double>? _restingRadii;
-  (double, double)? _retainedArc;
+  final Map<int, double> _tierPhases = {};
 
   (List<double>, (double, double)?) _menuLayout(double diameter) {
+    final base = _solveMenuLayout(diameter);
+    final arc = base.$2;
+    final resting = _restingRadii;
+    if (!_expanded ||
+        _tiers.length <= 1 ||
+        arc == null ||
+        resting == null ||
+        arc.$2 - arc.$1 < math.pi - 1e-7) {
+      return base;
+    }
+    final center =
+        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
+    final half = diameter / 2;
+    final inset = math.max(_menuInset(diameter), 4.0);
+    final bounds = Rect.fromLTRB(
+      half + inset,
+      half + 4,
+      _size!.width - half - inset,
+      _size!.height - half - 4,
+    );
+    final distances = [
+      center.dx - bounds.left,
+      bounds.right - center.dx,
+      center.dy - bounds.top,
+      bounds.bottom - center.dy,
+    ];
+    final wide = _sharedMenuArc(diameter, base.$1, maxSpan: 2 * math.pi)!;
+    final ordered = [...distances]..sort();
+    final capacity = math.min(bounds.width, bounds.height) / 2;
+    final outer = base.$1.last;
+    final thirdWall = ordered[2];
+    // Three walls can split the visible ring into disconnected runs. As a
+    // wall clears the ring, unfold the newly joined run continuously rather
+    // than adding that entire angular region at its tangency threshold.
+    // At the viewport's inscribed radius, this reaches the whole available
+    // arc, so closing a ring never leaves an artificial directional gap.
+    final progress = thirdWall <= capacity
+        ? (wide.$2 - wide.$1 >= 2 * math.pi - 1e-8 ? 1.0 : 0.0)
+        : ((thirdWall - outer) / (thirdWall - capacity)).clamp(0.0, 1.0);
+    final unfold = progress * progress * (3 - 2 * progress);
+    if (unfold == 0) return base;
+    final span =
+        arc.$2 - arc.$1 + ((wide.$2 - wide.$1) - (arc.$2 - arc.$1)) * unfold;
+    return (base.$1, _sharedMenuArc(diameter, base.$1, maxSpan: span));
+  }
+
+  (List<double>, (double, double)?) _solveMenuLayout(double diameter) {
     if (!_expanded) {
       _menuLayoutKey = null;
+      _tierPhases.clear();
       return (const [], null);
     }
     if (_tiers.length <= 1) {
@@ -494,98 +733,70 @@ class _PuckOverlayState extends State<PuckOverlay>
     if (_menuLayoutKey != key) {
       _menuLayoutKey = key;
       _restingRadii = _menuRadii(diameter);
-      _retainedArc = _sharedMenuArc(diameter, _restingRadii!);
-      return (_restingRadii!, _retainedArc);
+      if (!widget.layoutPreview) {
+        return (_restingRadii!, _sharedMenuArc(diameter, _restingRadii!));
+      }
     }
     final resting = _restingRadii!;
-    // Compression belongs to dragging. Restore the resting ring distances on
-    // release and choose end caps for the final dock, rather than repeatedly
-    // alternating between radial expansion and angular expansion.
-    if (_grabOffset == null) {
+    // Real items target the final dock and can use its resting radii. The
+    // preview follows the moving root, so it must keep solving for available
+    // space throughout docking instead of forcing a radius reset on release.
+    if (_grabOffset == null && !widget.layoutPreview) {
       final arc = _sharedMenuArc(diameter, resting);
       if (arc != null) {
-        _retainedArc = arc;
         return (resting, arc);
       }
       final radii = _menuRadii(diameter);
-      _retainedArc = _sharedMenuArc(diameter, radii);
-      return (radii, _retainedArc);
+      return (radii, _sharedMenuArc(diameter, radii));
     }
     List<double> compressed(double scale) => [
       for (final radius in resting)
         resting.first + (radius - resting.first) * scale,
     ];
-    final center =
-        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
-    final half = diameter / 2;
-    final inset = _menuInset(diameter);
-    bool fits(double scale) {
-      final arc = _retainedArc;
-      if (arc == null) return false;
-      final radii = compressed(scale);
-      final tiers = _tiers;
-      for (var tier = 0; tier < tiers.length; tier++) {
-        final count = tiers[tier].length;
-        for (var item = 0; item < count; item++) {
-          final fraction = count == 1 ? 0.5 : item / (count - 1);
-          final angle = arc.$1 + (arc.$2 - arc.$1) * fraction;
-          final point =
-              center + Offset(math.cos(angle), math.sin(angle)) * radii[tier];
-          if (point.dx < half + inset - 1e-6 ||
-              point.dx > _size!.width - half - inset + 1e-6 ||
-              point.dy < half - 1e-6 ||
-              point.dy > _size!.height - half + 1e-6) {
-            return false;
-          }
-        }
-      }
-      return true;
+
+    // Rotation gets the first chance to preserve the fan's width. The fixed
+    // inner ring limits the useful span: compressing outer gaps cannot help
+    // an end cap that already collides on that ring.
+    final innerArc = _sharedMenuArc(diameter, [resting.first], balance: false);
+    if (innerArc == null) {
+      return (resting, null);
+    }
+    final desiredWidth = innerArc.$2 - innerArc.$1;
+    bool wideEnough((double, double)? arc) =>
+        arc != null && arc.$2 - arc.$1 >= desiredWidth - 1e-8;
+    final fullArc = _sharedMenuArc(diameter, resting);
+    if (wideEnough(fullArc)) {
+      return (resting, fullArc);
     }
 
-    (List<double>, (double, double)?) fanOut(List<double> radii) {
-      final available = _sharedMenuArc(diameter, radii);
-      final retained = _retainedArc;
-      if (available != null &&
-          (retained == null ||
-              (available.$1 <= retained.$1 + 1e-8 &&
-                  available.$2 >= retained.$2 - 1e-8 &&
-                  available.$2 - available.$1 >
-                      retained.$2 - retained.$1 + 1e-8))) {
-        _retainedArc = available;
-      }
-      return (radii, _retainedArc);
-    }
-
-    // Give recovered space to the angular fan before restoring radial gaps.
-    // Otherwise expanding the radii consumes that space and pins the arc to
-    // the same narrow endpoints all the way back to the wall.
-    fanOut(compressed(0.5));
-
-    // Preserve both end caps while squeezing the radial gaps. Always measure
-    // against resting distances, so repeated frames cannot compound compression.
-    if (fits(1)) return fanOut(resting);
-    if (fits(0.5)) {
+    // Only compress when even the best rotation cannot maintain that span.
+    // Each smaller outer radius lies between the previous one and the fixed
+    // inner ring, so its available angles can only increase.
+    var radii = compressed(0.5);
+    var arc = _sharedMenuArc(diameter, radii);
+    if (wideEnough(arc)) {
       var low = 0.5;
       var high = 1.0;
-      for (var step = 0; step < 30; step++) {
+      for (var step = 0; step < 24; step++) {
         final scale = (low + high) / 2;
-        if (fits(scale)) {
+        final candidate = _sharedMenuArc(
+          diameter,
+          compressed(scale),
+          balance: false,
+        );
+        if (wideEnough(candidate)) {
           low = scale;
         } else {
           high = scale;
         }
       }
-      return fanOut(compressed(low));
-    }
-    // Rearrange only after the allowed compression is exhausted.
-    var radii = compressed(0.5);
-    var arc = _sharedMenuArc(diameter, radii);
-    if (arc == null) {
-      // Very small viewports can require the existing visibility fallback.
+      radii = compressed(low);
+      arc = _sharedMenuArc(diameter, radii);
+    } else if (arc == null) {
+      // Keep the existing visibility fallback for very small viewports.
       radii = _menuRadii(diameter);
       arc = _sharedMenuArc(diameter, radii);
     }
-    _retainedArc = arc;
     return (radii, arc);
   }
 
@@ -602,6 +813,7 @@ class _PuckOverlayState extends State<PuckOverlay>
           tiers[tier].length,
           radii[tier],
           sharedArc: arc,
+          tier: tier,
         ),
     ];
   }
@@ -626,6 +838,7 @@ class _PuckOverlayState extends State<PuckOverlay>
       if (widget.menuExpanded != null) _syncExpanded();
     }
     if (_menuPhase == _MenuPhase.collapsing) {
+      if (widget.layoutPreview) _pendingCollapse.clear();
       final identities = {
         for (var i = 0; i < _items.length; i++) _items[i].key ?? i,
       };
@@ -700,7 +913,7 @@ class _PuckOverlayState extends State<PuckOverlay>
                 : _position.dy.clamp(0, _bottom),
           );
         }
-        _position = _bounded(_position);
+        _position = _constrainVertical(_position);
         if (restore) _dock(Offset.zero);
         final itemDiameter = math.min(
           widget.menuItemDiameter,
@@ -724,42 +937,66 @@ class _PuckOverlayState extends State<PuckOverlay>
           'menu.layout.solve',
           () => _menuLayout(itemDiameter),
         );
-        final targets = _expanded
+        final targets =
+            _expanded && (!widget.layoutPreview || widget.showDebugAnchors)
             ? PuckOpeningTrace.measure(
                 'menu.targets',
                 () => _menuTargets(itemDiameter, radii, arc),
               )
             : const <Offset>[];
         PuckOpeningTrace.instant('overlay.targets.ready');
+        if (_expanded) {
+          _curves.fullCircle =
+              arc != null && arc.$2 - arc.$1 >= 2 * math.pi - 1e-8;
+        }
         final menuPucks = <int, Widget>{
-          for (var i = 0; i < items.length; i++)
-            if (widget.maintainMenuState ||
-                (_menuPhase != _MenuPhase.closed &&
-                    (_expanded ||
-                        _pendingCollapse.contains(items[i].key ?? i))))
-              i: SpringPuck(
-                key: ValueKey(items[i].key ?? i),
-                origin: origin,
-                delay: _tierDelay(i),
-                motionClock: _menuMotionClock,
-                cables: _cables,
-                showRopes: widget.showRopes,
-                curves: widget.showTierCurves ? _curves : null,
-                tier: itemTiers[i],
-                order: i,
-                dormant: _menuPhase == _MenuPhase.closed,
-                target: _expanded ? targets[i] : origin,
-                diameter: itemDiameter,
-                parentDiameter: widget.diameter,
-                bounds: size,
-                horizontalInset: _menuInset(itemDiameter),
-                expanded: _expanded,
-                onCollapsed: () =>
-                    _itemCollapsed(items[i].key ?? i, generation),
-                child: items[i],
-              ),
+          if (!widget.layoutPreview)
+            for (var i = 0; i < items.length; i++)
+              if (widget.maintainMenuState ||
+                  (_menuPhase != _MenuPhase.closed &&
+                      (_expanded ||
+                          _pendingCollapse.contains(items[i].key ?? i))))
+                i: SpringPuck(
+                  key: ValueKey(items[i].key ?? i),
+                  origin: origin,
+                  delay: _tierDelay(i),
+                  motionClock: _menuMotionClock,
+                  cables: _cables,
+                  showRopes: widget.showRopes,
+                  curves: widget.showTierCurves ? _curves : null,
+                  tier: itemTiers[i],
+                  order: i,
+                  dormant: _menuPhase == _MenuPhase.closed,
+                  target: _expanded ? targets[i] : origin,
+                  diameter: itemDiameter,
+                  parentDiameter: widget.diameter,
+                  bounds: size,
+                  horizontalInset: _menuInset(itemDiameter),
+                  expanded: _expanded,
+                  onCollapsed: () =>
+                      _itemCollapsed(items[i].key ?? i, generation),
+                  child: items[i],
+                ),
         };
-        final menuLayers = widget.menuTierBuilder == null
+        final menuLayers = widget.layoutPreview
+            ? <Widget>[
+                if (_expanded)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: PuckLayoutPreviewPainter(
+                          center:
+                              _menuPosition +
+                              Offset(widget.diameter / 2, widget.diameter / 2),
+                          radii: radii,
+                          itemDiameter: itemDiameter,
+                          arc: arc,
+                        ),
+                      ),
+                    ),
+                  ),
+              ]
+            : widget.menuTierBuilder == null
             ? menuPucks.values.toList()
             : <Widget>[
                 for (var tier = 0; tier < tiers.length; tier++)
@@ -783,7 +1020,7 @@ class _PuckOverlayState extends State<PuckOverlay>
           fit: StackFit.expand,
           children: [
             widget.child,
-            if (widget.showTierCurves)
+            if (widget.showTierCurves && !widget.layoutPreview)
               Positioned.fill(
                 child: IgnorePointer(
                   child: RepaintBoundary(
@@ -796,7 +1033,7 @@ class _PuckOverlayState extends State<PuckOverlay>
                   ),
                 ),
               ),
-            if (widget.showRopes)
+            if (widget.showRopes && !widget.layoutPreview)
               Positioned.fill(
                 child: IgnorePointer(
                   child: CustomPaint(
@@ -833,7 +1070,7 @@ class _PuckOverlayState extends State<PuckOverlay>
                     }
                     final box = context.findRenderObject()! as RenderBox;
                     setState(() {
-                      _position = _bounded(
+                      _position = _constrainVertical(
                         box.globalToLocal(details.globalPosition) -
                             _grabOffset!,
                       );

@@ -4,8 +4,43 @@ import 'package:puck_example/main.dart';
 import 'package:puck/puck.dart';
 import 'package:puck/src/spring_puck.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:puck_example/layout_demo.dart';
+import 'package:puck/src/puck_layout_preview_painter.dart';
 
 void main() {
+  testWidgets('layout demo opens, resets, and returns to the playground', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const PuckDemo());
+    await tester.tap(find.byTooltip('Explore menu layout'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuLayoutDemo), findsOneWidget);
+    expect(find.byType(SpringPuck), findsNothing);
+    expect(find.byType(LiquidGlassLayer), findsNothing);
+    PuckLayoutPreviewPainter layout() => tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<PuckLayoutPreviewPainter>()
+        .single;
+    final initial = layout().center;
+    expect(layout().radii, hasLength(3));
+    expect(layout().arc, isNotNull);
+    await tester.drag(
+      find.byKey(const ValueKey('layout-root')),
+      const Offset(-500, -100),
+    );
+    await tester.pumpAndSettle();
+    expect(layout().center.dx, lessThan(initial.dx));
+    await tester.tap(find.byTooltip('Reset layout'));
+    await tester.pumpAndSettle();
+    expect(layout().center, initial);
+    await tester.tap(find.byTooltip('Back to playground'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuLayoutDemo), findsNothing);
+    expect(find.text('Puck playground'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'the app is interactive immediately and never opens the menu for preparation',
     (tester) async {

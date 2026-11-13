@@ -5,7 +5,296 @@ import 'package:puck/src/puck_anchor_painter.dart';
 import 'dart:math' as math;
 
 void main() {
-  testWidgets('obstacles compress tiers before changing end caps', (
+  for (final width in [402.0, 480.0]) {
+    for (final edge in PuckEdge.values) {
+      for (final towardTop in [true, false]) {
+        testWidgets(
+          'rotates caps before compressing at $width/$edge/top=$towardTop',
+          (tester) async {
+            await tester.binding.setSurfaceSize(Size(width, 900));
+            addTearDown(() => tester.binding.setSurfaceSize(null));
+            final expanded = ValueNotifier(true);
+            addTearDown(expanded.dispose);
+            const root = ValueKey('root');
+            await tester.pumpWidget(
+              MaterialApp(
+                home: PuckOverlay(
+                  initialEdge: edge,
+                  layoutPreview: true,
+                  showDebugAnchors: true,
+                  menuExpanded: expanded,
+                  menuRadius: 80,
+                  puck: const ColoredBox(key: root, color: Colors.blue),
+                  menuTiers: [
+                    for (final n in [4, 7, 12])
+                      List.generate(n, (_) => const SizedBox()),
+                  ],
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            PuckAnchorPainter layout() => tester
+                .widgetList<CustomPaint>(find.byType(CustomPaint))
+                .map((w) => w.painter)
+                .whereType<PuckAnchorPainter>()
+                .single;
+            final inward = edge == PuckEdge.left ? 1.0 : -1.0;
+            final gesture = await tester.startGesture(
+              tester.getCenter(find.byKey(root)),
+            );
+            await gesture.moveBy(Offset(20 * inward, 0));
+            await tester.pump();
+            await gesture.moveBy(Offset(80 * inward, 0));
+            await tester.pump();
+            final radii = List<double>.of(layout().radii);
+            expect(
+              layout().arc!.$2 - layout().arc!.$1,
+              greaterThanOrEqualTo(math.pi - 1e-7),
+            );
+            // Approach the barrier far enough to require cap movement, while
+            // a rotated semicircle still has room at the current radii.
+            final y = towardTop ? radii.last + 14 : 900 - radii.last - 14;
+            await gesture.moveBy(Offset(0, y - layout().center.dy));
+            await tester.pump();
+            final rotated = layout();
+            for (var tier = 0; tier < radii.length; tier++) {
+              expect(rotated.radii[tier], closeTo(radii[tier], .001));
+            }
+            expect(
+              rotated.arc!.$2 - rotated.arc!.$1,
+              greaterThanOrEqualTo(math.pi - 1e-7),
+            );
+            final freeCap = towardTop == (edge == PuckEdge.right)
+                ? rotated.arc!.$1
+                : rotated.arc!.$2;
+            expect(math.cos(freeCap) * inward, lessThan(-.05));
+            for (final radius in rotated.radii) {
+              for (var i = 0; i <= 20; i++) {
+                final a =
+                    rotated.arc!.$1 +
+                    (rotated.arc!.$2 - rotated.arc!.$1) * i / 20;
+                final p =
+                    rotated.center + Offset(math.cos(a), math.sin(a)) * radius;
+                expect(p.dx, inInclusiveRange(28 - 1e-6, width - 28 + 1e-6));
+                expect(p.dy, inInclusiveRange(28 - 1e-6, 872 + 1e-6));
+              }
+            }
+            final inwardAngle = edge == PuckEdge.left ? 0.0 : math.pi;
+            var previousRotation =
+                ((rotated.arc!.$1 + rotated.arc!.$2) / 2 - inwardAngle).abs();
+            for (var step = 1; step <= 8; step++) {
+              final nextY = y + (450 - y) * step / 8;
+              await gesture.moveBy(Offset(0, nextY - layout().center.dy));
+              await tester.pump();
+              final arc = layout().arc!;
+              final rotation = ((arc.$1 + arc.$2) / 2 - inwardAngle).abs();
+              expect(rotation, lessThanOrEqualTo(previousRotation + 1e-6));
+              previousRotation = rotation;
+            }
+            final restored = layout();
+            expect(
+              (restored.arc!.$1 + restored.arc!.$2) / 2,
+              closeTo(inwardAngle, 1e-6),
+            );
+            // Each end's closest puck/wall clearance should be balanced,
+            // including while the barrier requires a rotated orientation.
+            double clearance(PuckAnchorPainter p, double angle) {
+              return [
+                for (final r in [p.radii.first, p.radii.last]) ...[
+                  p.center.dx + r * math.cos(angle) - 28,
+                  width - 28 - p.center.dx - r * math.cos(angle),
+                  p.center.dy + r * math.sin(angle) - 28,
+                  872 - p.center.dy - r * math.sin(angle),
+                ],
+              ].reduce(math.min);
+            }
+
+            for (final p in [rotated, restored]) {
+              expect(
+                clearance(p, p.arc!.$1),
+                closeTo(clearance(p, p.arc!.$2), .01),
+              );
+            }
+            await gesture.up();
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+
+  for (final edge in PuckEdge.values) {
+    for (final preview in [false, true]) {
+      testWidgets(
+        'reversing toward $edge wall keeps radii stable (preview: $preview)',
+        (tester) async {
+          await tester.binding.setSurfaceSize(const Size(402, 752));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          final expanded = ValueNotifier(true);
+          addTearDown(expanded.dispose);
+          const root = ValueKey('root');
+          await tester.pumpWidget(
+            MaterialApp(
+              home: PuckOverlay(
+                initialEdge: edge,
+                layoutPreview: preview,
+                showDebugAnchors: true,
+                menuExpanded: expanded,
+                menuRadius: 80,
+                puck: const ColoredBox(key: root, color: Colors.blue),
+                menuTiers: [
+                  for (final count in [4, 7, 12])
+                    List.generate(count, (_) => const SizedBox()),
+                ],
+                child: const SizedBox.expand(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          PuckAnchorPainter layout() => tester
+              .widgetList<CustomPaint>(find.byType(CustomPaint))
+              .map((w) => w.painter)
+              .whereType<PuckAnchorPainter>()
+              .single;
+          final initial = layout();
+          final inward = edge == PuckEdge.left ? 1.0 : -1.0;
+          final gesture = await tester.startGesture(
+            tester.getCenter(find.byKey(root)),
+          );
+          await gesture.moveBy(Offset(20 * inward, 0));
+          await tester.pump();
+          await gesture.moveBy(Offset(20 * inward, 0));
+          await tester.pump();
+          expect(layout().arc!.$2 - layout().arc!.$1, greaterThan(math.pi));
+          // Return to the docking edge without a transient radius collapse.
+          for (var step = 0; step < 40; step++) {
+            await gesture.moveBy(Offset(-inward, 0));
+            await tester.pump(const Duration(milliseconds: 16));
+            expect(layout().radii, initial.radii, reason: 'outward step $step');
+          }
+          expect(layout().arc, initial.arc);
+          // Keep pulling until the root's center is outside the viewport.
+          // Assert pointer tracking as well as radii, so clamping the root
+          // cannot accidentally make this regression test pass.
+          var previousSpan = layout().arc!.$2 - layout().arc!.$1;
+          for (var step = 1; step <= 30; step++) {
+            await gesture.moveBy(Offset(-inward, 0));
+            await tester.pump(const Duration(milliseconds: 16));
+            final expectedX = initial.center.dx - inward * step;
+            expect(
+              tester.getCenter(find.byKey(root)).dx,
+              closeTo(expectedX, 1e-8),
+            );
+            expect(layout().center.dx, closeTo(expectedX, 1e-8));
+            expect(
+              layout().radii,
+              initial.radii,
+              reason: 'offscreen step $step',
+            );
+            final span = layout().arc!.$2 - layout().arc!.$1;
+            expect(span, lessThanOrEqualTo(previousSpan + 1e-8));
+            previousSpan = span;
+          }
+          // Even a captured drag far outside the viewport must not shrink the
+          // other tiers to compensate for an invisible fixed inner circle.
+          await gesture.moveBy(Offset(-70 * inward, 0));
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(layout().radii, initial.radii);
+          expect(layout().arc, isNull);
+          expect(
+            tester.getCenter(find.byKey(root)).dx,
+            closeTo(initial.center.dx - 100 * inward, 1e-8),
+          );
+          await gesture.moveBy(Offset(70 * inward, 0));
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(layout().radii, initial.radii);
+          expect(layout().arc, isNotNull);
+          final releasedX = tester.getCenter(find.byKey(root)).dx;
+          await gesture.up();
+          await tester.pump();
+          expect(
+            tester.getCenter(find.byKey(root)).dx,
+            closeTo(releasedX, 1e-8),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            tester.getCenter(find.byKey(root)).dx,
+            closeTo(initial.center.dx, 1e-8),
+          );
+          expect(layout().radii, initial.radii);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
+  testWidgets('compresses only when rotation cannot preserve the fan span', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(402, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final expanded = ValueNotifier(true);
+    addTearDown(expanded.dispose);
+    const root = ValueKey('root');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PuckOverlay(
+          layoutPreview: true,
+          showDebugAnchors: true,
+          menuExpanded: expanded,
+          menuRadius: 80,
+          puck: const ColoredBox(key: root, color: Colors.blue),
+          menuTiers: [
+            for (final n in [4, 7, 12])
+              List.generate(n, (_) => const SizedBox()),
+          ],
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    PuckAnchorPainter layout() => tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((w) => w.painter)
+        .whereType<PuckAnchorPainter>()
+        .single;
+    final initial = layout();
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(root)),
+    );
+    await gesture.moveBy(const Offset(-20, 0));
+    await tester.pump();
+    await gesture.moveBy(const Offset(-1, 0));
+    await tester.pump();
+    await gesture.moveBy(Offset(201 - layout().center.dx, 0));
+    await tester.pump();
+    final compressed = layout();
+    expect(compressed.radii.first, initial.radii.first);
+    expect(compressed.radii.last, lessThan(initial.radii.last));
+    final scale =
+        (compressed.radii.last - compressed.radii.first) /
+        (initial.radii.last - initial.radii.first);
+    expect(scale, inInclusiveRange(.5, 1.0));
+    expect(compressed.arc!.$2 - compressed.arc!.$1, closeTo(2 * math.pi, 1e-7));
+    // Move away and back to force fresh layout evaluations at the same point.
+    await gesture.moveBy(const Offset(.1, 0));
+    await tester.pump();
+    await gesture.moveBy(const Offset(-.1, 0));
+    await tester.pump();
+    for (var tier = 0; tier < compressed.radii.length; tier++) {
+      expect(layout().radii[tier], closeTo(compressed.radii[tier], .0001));
+    }
+    await gesture.moveBy(Offset(initial.center.dx - layout().center.dx, 0));
+    await tester.pump();
+    expect(layout().radii, initial.radii);
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('obstacles rotate end caps before compressing tiers', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(800, 1000));
@@ -44,26 +333,16 @@ void main() {
     await tester.pump();
     await gesture.moveBy(const Offset(430, 0));
     await tester.pump();
-    final squeezed = layout();
-    expect(squeezed.arc, initial.arc);
-    final scale =
-        (squeezed.radii.last - squeezed.radii.first) /
-        (initial.radii.last - initial.radii.first);
-    expect(scale, greaterThanOrEqualTo(0.5));
-    expect(scale, lessThan(1));
-    // Rebuilding at the same position must not repeatedly halve the gaps.
+    final rotated = layout();
+    expect(rotated.arc, isNot(initial.arc));
+    expect(rotated.radii, initial.radii);
+    // Rebuilding at the same position must not change the radii.
     await tester.pump(const Duration(milliseconds: 16));
-    expect(layout().radii, squeezed.radii);
+    expect(layout().radii, rotated.radii);
     await gesture.moveBy(const Offset(150, 0));
     await tester.pump();
     final rearranged = layout();
-    expect(rearranged.arc, isNot(initial.arc));
-    for (var tier = 1; tier < initial.radii.length; tier++) {
-      expect(
-        rearranged.radii[tier] - rearranged.radii[tier - 1],
-        closeTo((initial.radii[tier] - initial.radii[tier - 1]) * 0.5, 0.001),
-      );
-    }
+    expect(rearranged.radii, initial.radii);
     await gesture.moveBy(const Offset(-600, 0));
     await tester.pump();
     await gesture.up();
@@ -178,7 +457,7 @@ void main() {
       final wider = span();
       await gesture.moveBy(const Offset(4, 0));
       await tester.pump();
-      expect(span(), greaterThanOrEqualTo(wider));
+      expect(span(), greaterThanOrEqualTo(math.min(wider, math.pi) - 1e-7));
       expect(span(), greaterThanOrEqualTo(initial - 0.001));
       await gesture.up();
       await tester.pumpAndSettle();

@@ -12,6 +12,7 @@ class PuckTierCurveItem {
 }
 
 class PuckTierCurves extends ChangeNotifier {
+  bool fullCircle = false;
   final _items = <Object, PuckTierCurveItem>{};
   List<List<PuckTierCurveItem>>? _tiers;
   Duration? _lastRepaint;
@@ -113,7 +114,9 @@ class PuckTierCurvePainter extends CustomPainter {
       final radius = (first - center).distance;
       final start = (first - center).direction;
       var sweep = ((last - center).direction - start) % (2 * math.pi);
-      if (tier.length >= 3) {
+      if (curves.fullCircle) {
+        sweep = 2 * math.pi;
+      } else if (tier.length >= 3) {
         final middle =
             ((tier[tier.length ~/ 2].bounds.center - center).direction -
                 start) %
