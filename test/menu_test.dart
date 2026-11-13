@@ -47,12 +47,7 @@ void main() {
           lessThan(0.000001),
         );
       }
-      // The ticker's first frame establishes its time origin.
-      await tester.pump(const Duration(milliseconds: 16));
-      expect(
-        (tester.getCenter(find.byKey(_item(1))) - origin).distance,
-        lessThan(0.000001),
-      );
+      // The very next frame advances the spring, without a zero-time tick.
       await tester.pump(const Duration(milliseconds: 16));
       expect(
         (tester.getCenter(find.byKey(_item(1))) - origin).distance,
@@ -87,7 +82,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('closing during the preparation frame cancels expansion', (
+  testWidgets('closing before the first moving frame cancels expansion', (
     tester,
   ) async {
     await _mount(tester);

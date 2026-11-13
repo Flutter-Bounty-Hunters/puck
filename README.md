@@ -68,7 +68,9 @@ items to overlap; choose an appropriate radius, diameter, and item count.
 
 Every menu item uses a two-dimensional spring. Moving the main puck, resizing
 the overlay, or reversing expansion retargets the springs while preserving their
-velocity. Expanded items keep a 24px horizontal gap from the overlay edges (reduced
+velocity. Opening starts the spring clock at the request and samples it during
+the first layout, so items can move without waiting for another animation frame.
+Expanded items keep a 24px horizontal gap from the overlay edges (reduced
 only when the container is too narrow). They are constrained to these bounds during
 spring overshoot. Collapsing items return underneath the main puck and stop
 receiving taps. Give items stable keys if their order or membership changes.
@@ -133,3 +135,93 @@ flutter run
 
 The package does not require native platform runners. Android and iOS runners
 belong to the example app, which consumes the same public API as any other app.
+
+### Multiple menu tiers
+
+Supply `menuTiers` instead of `menuItems`, with lists ordered nearest to farthest:
+
+```dart
+menuTiers: [
+  [favoriteButton, searchButton],
+  [shareButton, downloadButton, settingsButton],
+  [helpButton, profileButton],
+],
+```
+
+Any number of tiers is supported; empty lists are ignored. `menuRadius` is the
+preferred inner radius. Additional tiers spread into the available space and
+compress when needed, respecting the same viewport, safe-area, and keyboard
+boundaries as single-tier menus. Extremely crowded menus may overlap when the
+available space cannot fit all items. Give items unique stable keys to preserve
+state across updates. Tiers start 50 milliseconds apart, farthest first when
+opening and nearest first when closing.
+
+Multi-tier menus share two end-cap directions. Each tier's first and last items
+align with those directions, and its other items use equal angular steps along
+the arc between them. A tier with one item uses the arc midpoint. The shared
+arc adjusts to keep every tier within the available boundaries. Debug visuals
+show both end-cap lines, tier arcs, and item anchor dots.
+
+Tier spacing increases outward: each step adds the larger of `menuRadius` and
+one item diameter, plus 8 pixels for each successive tier. For the demo's 80px
+inner radius, the next gaps are 88px, 96px, and so on. Available viewport space
+may compress these distances further.
+
+While an open menu moves against a boundary, it preserves its end-cap angles
+and first squeezes the radial gaps between tiers, down to 50% of their resting
+spacing. Only when that no longer fits does it choose a new arc. The tiers
+spread back out when space becomes available again. While dragging, the shared
+arc also widens immediately as soon as its end caps have room to move outward.
+When room returns, widening the arc takes priority over restoring radial gaps.
+
+On release, the menu restores its resting tier distances and chooses its arc at
+the root's final docking destination. The root's spring motion does not trigger
+repeated menu rearrangements while it settles against the wall.
+
+Set `showTierCurves: true` to connect each tier's items with a 6px circular arc.
+The curves track the live spring positions, fade near the root during opening
+and closing, and are clipped out of every puck, including translucent ones.
+The demo enables these curves independently of debug visuals.
+
+Tier arcs use direct canvas arc strokes and analytic circular cutouts, without
+boolean clipping paths or offscreen layers. The arc layer has its own repaint
+boundary, caches tier ordering, and coalesces item notifications once per frame.
+Run `flutter test benchmark/tier_curve_benchmark_test.dart` to measure CPU paint
+recording time for the demo's 23 items (this excludes GPU raster time).
+
+### Preparing expensive menu content
+
+`maintainMenuState: true` keeps item subtrees ready beneath the root between
+opens. This trades some startup work and retained memory for lower tap latency.
+Closed items ignore input and semantics, and track the root without running
+springs. The default remains `false`, disposing items when they collapse.
+
+`menuTierBuilder: (context, tier, child) => ...` wraps one tier's positioned
+Stack in a rendering layer. Keep the wrapper at the overlay's full size so
+coordinates stay consistent. The demo uses one `LiquidGlassLayer` per tier
+(4/7/12 shapes), plus the root's separate layer, to respect the renderer's
+16-shape limit. It deliberately keeps those captures independent because glass
+surfaces overlap while animating.
+
+### Transparent first-use preparation
+
+The demo starts immediately with its menu closed. It has no startup cover,
+spinner, scripted open/close cycle, or readiness gate for input. Real item states
+remain prepared beneath the root with `maintainMenuState`.
+
+Each menu glass layer also queues a disposable, glass-only offscreen scene during
+idle time. Preparation is serialized, uses no user item widgets or callbacks,
+and never contributes visible pixels or semantics. Any pointer input cancels
+unfinished jobs; opening the menu never waits for them. Images and temporary
+layers are released afterward. Shader loading also runs asynchronously.
+
+For diagnostics, `PUCK_SKIP_WARMUP=true` skips those idle jobs and
+`PUCK_TRACE_PREPARATION=true` logs their lifecycle. The profiler's
+`PUCK_PROFILE_START_DELAY_MS=200` option exercises early interaction.
+
+`PuckOverlay.menuExpanded` remains an optional caller-owned `ValueNotifier<bool>`
+for explicit programmatic control. The demo does not use it for preparation.
+
+The example includes [six isolated performance fixtures and a cold-launch
+benchmark runner](example/lib/performance/README.md), covering solid, photo,
+and glass menus through first/repeated openings and open/closed drag/release.

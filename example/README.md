@@ -11,3 +11,6 @@ flutter run
 
 The app depends on the parent `puck` package through a local path dependency,
 so edits to the package can be hot reloaded in this app.
+
+The six rendering fixtures and cold-launch benchmark runner are documented in
+[lib/performance/README.md](lib/performance/README.md).
