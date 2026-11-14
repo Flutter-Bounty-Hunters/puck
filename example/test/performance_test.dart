@@ -62,9 +62,10 @@ void main() {
       expect(handles.expanded.value, isFalse);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(
-        find.byType(Image),
+        find.byType(Image, skipOffstage: false),
         config.photos ? findsNWidgets(config.itemCount + 1) : findsNothing,
       );
+      expect(find.byType(Image), config.photos ? findsOneWidget : findsNothing);
       expect(
         find.byType(LiquidGlassLayer),
         config.glass ? findsNWidgets(config.counts.length + 1) : findsNothing,
@@ -72,6 +73,10 @@ void main() {
       await tester.tap(find.byKey(handles.root));
       await tester.pumpAndSettle();
       expect(handles.expanded.value, isTrue);
+      expect(
+        find.byType(Image),
+        config.photos ? findsNWidgets(config.itemCount + 1) : findsNothing,
+      );
       expect(
         tester.getCenter(find.byKey(handles.items.last)),
         isNot(tester.getCenter(find.byKey(handles.root))),

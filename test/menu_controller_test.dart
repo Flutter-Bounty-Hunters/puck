@@ -87,7 +87,10 @@ void main() {
     await tester.pumpAndSettle();
     final origin = tester.getCenter(find.byKey(root));
     double distance(int tier) =>
-        (tester.getCenter(find.byKey(ValueKey('tier-$tier'))) - origin)
+        (tester.getCenter(
+                  find.byKey(ValueKey('tier-$tier'), skipOffstage: false),
+                ) -
+                origin)
             .distance;
     expanded.value = true;
     await tester.pump(const Duration(milliseconds: 16));

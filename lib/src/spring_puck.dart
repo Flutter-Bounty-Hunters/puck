@@ -233,6 +233,7 @@ class _SpringPuckState extends State<SpringPuck>
       _hasAdvanced = false;
       _rope = null;
       widget.cables.remove(this);
+      widget.curves?.remove(this);
       return;
     }
     if (oldWidget.showRopes != widget.showRopes) {
@@ -274,12 +275,14 @@ class _SpringPuckState extends State<SpringPuck>
   @override
   Widget build(BuildContext context) {
     final position = _visiblePosition;
-    widget.curves?.update(
-      this,
-      bounds: position & Size.square(widget.diameter),
-      tier: widget.tier,
-      order: widget.order,
-    );
+    if (!widget.dormant) {
+      widget.curves?.update(
+        this,
+        bounds: position & Size.square(widget.diameter),
+        tier: widget.tier,
+        order: widget.order,
+      );
+    }
     if (widget.showRopes) {
       widget.cables.update(
         this,
@@ -297,7 +300,7 @@ class _SpringPuckState extends State<SpringPuck>
         child: ExcludeSemantics(
           excluding: !widget.expanded,
           child: Offstage(
-            offstage: widget.dormant && widget.diameter > widget.parentDiameter,
+            offstage: widget.dormant,
             child: ClipOval(child: widget.child),
           ),
         ),

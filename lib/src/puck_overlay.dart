@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart' show Theme;
 
 import 'spring_puck.dart';
 import 'puck_opening_trace.dart';
@@ -76,7 +77,7 @@ class PuckOverlay extends StatefulWidget {
   /// Disabled ropes are neither painted nor simulated.
   final bool showRopes;
 
-  /// Draw thick curves through each tier's live item centers, clipped around
+  /// Draw circular curves through each tier's live item centers, clipped around
   /// all pucks. Curves follow the springs and fade near the root. Off by default.
   final bool showTierCurves;
 
@@ -101,8 +102,8 @@ class PuckOverlay extends StatefulWidget {
   final double menuRadius;
   final double menuItemDiameter;
 
-  /// Keep item subtrees mounted beneath the root when closed. Useful for
-  /// expensive content such as glass renderers. Hidden items remain inert.
+  /// Keep item subtrees mounted offstage when closed. Useful for
+  /// expensive content such as glass renderers. Hidden items do not paint.
   /// Defaults to false, which disposes collapsed item subtrees.
   final bool maintainMenuState;
 
@@ -462,6 +463,7 @@ class _PuckOverlayState extends State<PuckOverlay>
     List<double> radii, {
     bool balance = true,
     double maxSpan = math.pi,
+    double? fixedMiddle,
   }) {
     if (radii.isEmpty) return null;
     final center =
@@ -475,6 +477,37 @@ class _PuckOverlayState extends State<PuckOverlay>
     if (left > right || top > bottom) return null;
     const turn = 2 * math.pi;
     final rings = [radii.first, if (radii.last != radii.first) radii.last];
+    if (fixedMiddle != null) {
+      // A centered comparison needs only four wall limits, not angular runs.
+      // Release a wall's limit over a small clearance band after tangency;
+      // joining two visible runs must not suddenly change a candidate's score.
+      var reach = math.min(maxSpan, turn) / 2;
+      final transition = math.max(4.0, diameter / 4);
+      for (final wall in [
+        (center.dx - left, math.pi),
+        (right - center.dx, 0.0),
+        (center.dy - top, -math.pi / 2),
+        (bottom - center.dy, math.pi / 2),
+      ]) {
+        final separation = math
+            .atan2(
+              math.sin(wall.$2 - fixedMiddle),
+              math.cos(wall.$2 - fixedMiddle),
+            )
+            .abs();
+        for (final radius in rings) {
+          double limit;
+          if (wall.$1 <= radius) {
+            limit = separation - math.acos((wall.$1 / radius).clamp(-1.0, 1.0));
+          } else {
+            final t = ((wall.$1 - radius) / transition).clamp(0.0, 1.0);
+            limit = separation + (math.pi - separation) * t * t * (3 - 2 * t);
+          }
+          reach = math.min(reach, limit);
+        }
+      }
+      return reach <= 1e-10 ? null : (fixedMiddle - reach, fixedMiddle + reach);
+    }
     final cuts = <double>[0, turn];
     void add(double angle) {
       final a = angle % turn;
@@ -667,6 +700,123 @@ class _PuckOverlayState extends State<PuckOverlay>
   final Map<int, double> _tierPhases = {};
 
   (List<double>, (double, double)?) _menuLayout(double diameter) {
+    final base = _baseMenuLayout(diameter);
+    final arc = base.$2;
+    final resting = _restingRadii;
+    if (arc == null ||
+        resting == null ||
+        base.$1.last >= resting.last - 1e-7 ||
+        (_grabOffset == null && !widget.layoutPreview)) {
+      return base;
+    }
+    final span = arc.$2 - arc.$1;
+    final roomToImprove = ((2 * math.pi - span) / math.pi).clamp(0.0, 1.0);
+    if (roomToImprove <= 1e-8) return base;
+    final near = resting.first;
+    final range = resting.last - near;
+    if (range <= 1e-8) return base;
+    final scale = (base.$1.last - near) / range;
+    final middle = (arc.$1 + arc.$2) / 2;
+    final tiers = _tiers;
+
+    // Compare actual chord clearances, including the radial clearance between
+    // tiers. Saturate at a comfortable gap so excess space can instead restore
+    // resting radii. Smooth weights avoid switching between discrete winners.
+    double clearance(List<double> radii, double width) {
+      var gap = double.infinity;
+      int? previous;
+      for (var tier = 0; tier < tiers.length; tier++) {
+        final count = tiers[tier].length;
+        if (count == 0) continue;
+        if (count > 1) {
+          final step = math.min(width / (count - 1), 2 * math.pi / count);
+          gap = math.min(gap, 2 * radii[tier] * math.sin(step / 2) - diameter);
+        }
+        if (previous != null) {
+          gap = math.min(gap, radii[tier] - radii[previous] - diameter);
+        }
+        previous = tier;
+      }
+      return gap;
+    }
+
+    double ease(double value) {
+      final t = value.clamp(0.0, 1.0);
+      return t * t * (3 - 2 * t);
+    }
+
+    const comfortableGap = 8.0;
+    final baseGap = math.min(comfortableGap, clearance(base.$1, span));
+    var weight = 1.0;
+    var targetScale = scale;
+    var width = span;
+    const samples = 12;
+    for (var sample = 1; sample <= samples; sample++) {
+      final fraction = sample / samples;
+      final candidateScale = scale + (1 - scale) * fraction;
+      final radii = [
+        for (final r in resting) near + (r - near) * candidateScale,
+      ];
+      final candidate = _sharedMenuArc(
+        diameter,
+        radii,
+        maxSpan: span,
+        balance: false,
+        fixedMiddle: middle,
+      );
+      if (candidate == null) continue;
+      final gap = clearance(radii, candidate.$2 - candidate.$1);
+      final score =
+          math.min(comfortableGap, gap) +
+          comfortableGap * fraction * ease((gap - baseGap) / comfortableGap);
+      final contribution =
+          ease((score - baseGap) / (3 * comfortableGap)) * roomToImprove;
+      if (contribution == 0) continue;
+      weight += contribution;
+      targetScale += contribution * candidateScale;
+      width += contribution * (candidate.$2 - candidate.$1);
+    }
+    if (weight == 1) return base;
+    final resultArc = (
+      middle - width / weight / 2,
+      middle + width / weight / 2,
+    );
+    // Interpolated arcs stay in the same connected visible run. Limit the
+    // outward movement analytically so every intermediate layout is safe.
+    final center =
+        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
+    final half = diameter / 2;
+    final bounds = Rect.fromLTRB(
+      half + math.max(_menuInset(diameter), 4.0),
+      half + 4,
+      _size!.width - half - math.max(_menuInset(diameter), 4.0),
+      _size!.height - half - 4,
+    );
+    if (!bounds.contains(center)) return base;
+    var limit = near + range * targetScale / weight;
+    final angles = [resultArc.$1, resultArc.$2];
+    for (
+      var i = (resultArc.$1 / (math.pi / 2)).ceil();
+      i * math.pi / 2 <= resultArc.$2;
+      i++
+    ) {
+      angles.add(i * math.pi / 2);
+    }
+    for (final angle in angles) {
+      final x = math.cos(angle), y = math.sin(angle);
+      if (x > 1e-10) limit = math.min(limit, (bounds.right - center.dx) / x);
+      if (x < -1e-10) limit = math.min(limit, (bounds.left - center.dx) / x);
+      if (y > 1e-10) limit = math.min(limit, (bounds.bottom - center.dy) / y);
+      if (y < -1e-10) limit = math.min(limit, (bounds.top - center.dy) / y);
+    }
+    final resultScale = ((limit - near) / range).clamp(scale, 1.0);
+    return (
+      [for (final r in resting) near + (r - near) * resultScale],
+      resultArc,
+    );
+  }
+
+  (List<double>, (double, double)?) _baseMenuLayout(double diameter) {
     final base = _solveMenuLayout(diameter);
     final arc = base.$2;
     final resting = _restingRadii;
@@ -1028,6 +1178,9 @@ class _PuckOverlayState extends State<PuckOverlay>
                       painter: PuckTierCurvePainter(
                         _curves,
                         parentBounds: _position & Size.square(widget.diameter),
+                        color: Theme.brightnessOf(context) == Brightness.dark
+                            ? const Color(0xFF424242)
+                            : const Color(0xFFD1D5DB),
                       ),
                     ),
                   ),

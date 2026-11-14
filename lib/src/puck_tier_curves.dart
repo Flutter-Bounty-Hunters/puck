@@ -65,18 +65,39 @@ class PuckTierCurves extends ChangeNotifier {
 
 /// Connects the moving centers, with circular holes for every visible puck.
 class PuckTierCurvePainter extends CustomPainter {
-  PuckTierCurvePainter(this.curves, {required this.parentBounds})
-    : super(repaint: curves);
+  PuckTierCurvePainter(
+    this.curves, {
+    required this.parentBounds,
+    this.color = const Color(0xFFD1D5DB),
+  }) : super(repaint: curves);
 
   final PuckTierCurves curves;
   final Rect parentBounds;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
+      ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
+    // Cut out the actual puck circles once for the entire connector layer.
+    // Separate inverse clips keep overlapping holes excluded too; no boolean
+    // path operations or offscreen layers are needed.
+    canvas.save();
+    void exclude(Rect bounds) {
+      canvas.clipPath(
+        Path()
+          ..fillType = PathFillType.evenOdd
+          ..addRect(Offset.zero & size)
+          ..addOval(bounds),
+      );
+    }
+
+    exclude(parentBounds);
+    for (final item in curves.items) {
+      exclude(item.bounds);
+    }
     for (final tier in curves.tiers) {
       if (tier.length < 2) continue;
       final distance =
@@ -125,65 +146,16 @@ class PuckTierCurvePainter extends CustomPainter {
       } else if (sweep > math.pi) {
         sweep -= 2 * math.pi;
       }
-      paint.color = const Color(0xFF818CF8).withValues(alpha: 0.65 * opacity);
-      final span = sweep.abs();
-      final direction = sweep.sign;
-      final covered = <(double, double)>[];
-      var hidden = false;
-      void exclude(Rect bounds) {
-        // Inflate by half the stroke so rounded segment ends cannot bleed
-        // into even translucent pucks. No boolean paths, masks, or saveLayers.
-        final holeRadius = bounds.shortestSide / 2 + paint.strokeWidth / 2;
-        final delta = bounds.center - center;
-        final distance = delta.distance;
-        if (distance + radius <= holeRadius) {
-          hidden = true;
-          return;
-        }
-        if (distance < 1e-6 ||
-            distance >= radius + holeRadius ||
-            distance + holeRadius <= radius) {
-          return;
-        }
-        final halfAngle = math.acos(
-          ((radius * radius + distance * distance - holeRadius * holeRadius) /
-                  (2 * radius * distance))
-              .clamp(-1.0, 1.0),
-        );
-        final angle = ((delta.direction - start) * direction) % (2 * math.pi);
-        for (final shift in [-2 * math.pi, 0.0, 2 * math.pi]) {
-          final from = math.max(0.0, angle + shift - halfAngle);
-          final to = math.min(span, angle + shift + halfAngle);
-          if (from < to) covered.add((from, to));
-        }
-      }
-
-      exclude(parentBounds);
-      for (final item in curves.items) {
-        exclude(item.bounds);
-      }
-      if (hidden) continue;
-      covered.sort((a, b) => a.$1.compareTo(b.$1));
-      final circle = Rect.fromCircle(center: center, radius: radius);
-      var cursor = 0.0;
-      void drawTo(double end) {
-        if (end > cursor + 1e-6) {
-          canvas.drawArc(
-            circle,
-            start + direction * cursor,
-            direction * (end - cursor),
-            false,
-            paint,
-          );
-        }
-      }
-
-      for (final interval in covered) {
-        drawTo(interval.$1);
-        cursor = math.max(cursor, interval.$2);
-      }
-      drawTo(span);
+      paint.color = color.withValues(alpha: color.a * opacity);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        start,
+        sweep,
+        false,
+        paint,
+      );
     }
+    canvas.restore();
   }
 
   @override

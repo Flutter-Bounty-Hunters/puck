@@ -49,7 +49,8 @@ class PuckDemo extends StatefulWidget {
 class _PuckDemoState extends State<PuckDemo> {
   bool _showDebugAnchors = false;
   bool _darkMode = false;
-  bool _showLayoutDemo = false;
+  int _tabIndex = 0;
+  int _layoutReset = 0;
   @override
   Widget build(BuildContext context) {
     final brightness = _darkMode ? Brightness.dark : Brightness.light;
@@ -62,6 +63,7 @@ class _PuckDemoState extends State<PuckDemo> {
     );
     final glassAppearance = LiquidGlassAppearance.ios27Regular(
       brightness: brightness,
+      tint: const Color(0x00808080),
     );
     return MaterialApp(
       title: 'Puck',
@@ -70,20 +72,19 @@ class _PuckDemoState extends State<PuckDemo> {
         colorSchemeSeed: Colors.indigo,
         brightness: Brightness.dark,
       ),
-      themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: _darkMode || _tabIndex == 1 ? ThemeMode.dark : ThemeMode.light,
       // Keep the menu above the Navigator, including its app bars and dialogs.
-      builder: (context, child) => _showLayoutDemo
-          ? Overlay.wrap(
-              child: MenuLayoutDemo(
-                onBack: () => setState(() => _showLayoutDemo = false),
-              ),
-            )
-          : Overlay.wrap(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  child!,
-                  SafeArea(
+      builder: (context, child) => Overlay.wrap(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            child!,
+            IndexedStack(
+              index: _tabIndex,
+              children: [
+                TickerMode(
+                  enabled: _tabIndex == 0,
+                  child: SafeArea(
                     child: PuckOverlay(
                       maintainMenuState: true,
                       menuTierBuilder: (context, tier, child) =>
@@ -129,67 +130,100 @@ class _PuckDemoState extends State<PuckDemo> {
                       child: const SizedBox.expand(),
                     ),
                   ),
-                ],
-              ),
-            ),
-      home: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: const Text('Puck playground'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          leading: IconButton(
-            tooltip: _darkMode ? 'Switch to light mode' : 'Switch to dark mode',
-            icon: Icon(_darkMode ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () => setState(() => _darkMode = !_darkMode),
-          ),
-          actions: [
-            IconButton(
-              tooltip: 'Explore menu layout',
-              icon: const Icon(Icons.radar),
-              onPressed: () => setState(() => _showLayoutDemo = true),
-            ),
-            IconButton(
-              tooltip: _showDebugAnchors
-                  ? 'Hide debug visuals'
-                  : 'Show debug visuals',
-              isSelected: _showDebugAnchors,
-              icon: const Icon(Icons.bug_report_outlined),
-              selectedIcon: const Icon(Icons.bug_report),
-              onPressed: () =>
-                  setState(() => _showDebugAnchors = !_showDebugAnchors),
+                ),
+                TickerMode(
+                  enabled: _tabIndex == 1,
+                  child: MenuLayoutDemo(
+                    key: ValueKey(_layoutReset),
+                    embedded: true,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        body: SafeArea(
-          child: const Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(24),
-              child: SizedBox(
-                width: 360,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Drag or fling the puck.\nTap to open or close three menu tiers.\nLong-press to toggle arcs, end-cap lines, and anchor dots.',
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 24),
-                    TextField(
-                      textInputAction: TextInputAction.done,
-                      decoration: InputDecoration(
-                        labelText: 'Keyboard test',
-                        hintText: 'Tap to open the keyboard',
-                        helperText: 'Drag the puck to the keyboard boundary.',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
+      ),
+      home: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          backgroundColor: _tabIndex == 1 ? const Color(0xFF101722) : null,
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: const Text('Puck playground'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: _tabIndex == 1
+                ? null
+                : IconButton(
+                    tooltip: _darkMode
+                        ? 'Switch to light mode'
+                        : 'Switch to dark mode',
+                    icon: Icon(_darkMode ? Icons.light_mode : Icons.dark_mode),
+                    onPressed: () => setState(() => _darkMode = !_darkMode),
+                  ),
+            actions: [
+              if (_tabIndex == 1)
+                IconButton(
+                  tooltip: 'Reset layout',
+                  icon: const Icon(Icons.restart_alt),
+                  onPressed: () => setState(() => _layoutReset++),
                 ),
-              ),
+              if (_tabIndex == 0)
+                IconButton(
+                  tooltip: _showDebugAnchors
+                      ? 'Hide debug visuals'
+                      : 'Show debug visuals',
+                  isSelected: _showDebugAnchors,
+                  icon: const Icon(Icons.bug_report_outlined),
+                  selectedIcon: const Icon(Icons.bug_report),
+                  onPressed: () =>
+                      setState(() => _showDebugAnchors = !_showDebugAnchors),
+                ),
+            ],
+            bottom: TabBar(
+              tabs: const [
+                Tab(text: 'Example'),
+                Tab(text: 'Layout'),
+              ],
+              onTap: (index) {
+                FocusManager.instance.primaryFocus?.unfocus();
+                setState(() => _tabIndex = index);
+              },
             ),
           ),
+          body: _tabIndex == 1
+              ? const SizedBox.expand()
+              : SafeArea(
+                  child: const Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(24),
+                      child: SizedBox(
+                        width: 360,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Drag or fling the puck.\nTap to open or close three menu tiers.\nLong-press to toggle arcs, end-cap lines, and anchor dots.',
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 24),
+                            TextField(
+                              textInputAction: TextInputAction.done,
+                              decoration: InputDecoration(
+                                labelText: 'Keyboard test',
+                                hintText: 'Tap to open the keyboard',
+                                helperText:
+                                    'Drag the puck to the keyboard boundary.',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
         ),
       ),
     );

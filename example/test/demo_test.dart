@@ -8,11 +8,13 @@ import 'package:puck_example/layout_demo.dart';
 import 'package:puck/src/puck_layout_preview_painter.dart';
 
 void main() {
-  testWidgets('layout demo opens, resets, and returns to the playground', (
+  testWidgets('layout tab opens, preserves position, resets, and returns', (
     tester,
   ) async {
     await tester.pumpWidget(const PuckDemo());
-    await tester.tap(find.byTooltip('Explore menu layout'));
+    expect(find.text('Example'), findsOneWidget);
+    expect(find.text('Layout'), findsOneWidget);
+    await tester.tap(find.text('Layout'));
     await tester.pumpAndSettle();
     expect(find.byType(MenuLayoutDemo), findsOneWidget);
     expect(find.byType(SpringPuck), findsNothing);
@@ -31,10 +33,18 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(layout().center.dx, lessThan(initial.dx));
+    final dragged = layout().center;
+    await tester.tap(find.text('Example'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuLayoutDemo), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.tap(find.text('Layout'));
+    await tester.pumpAndSettle();
+    expect(layout().center, dragged);
     await tester.tap(find.byTooltip('Reset layout'));
     await tester.pumpAndSettle();
     expect(layout().center, initial);
-    await tester.tap(find.byTooltip('Back to playground'));
+    await tester.tap(find.text('Example'));
     await tester.pumpAndSettle();
     expect(find.byType(MenuLayoutDemo), findsNothing);
     expect(find.text('Puck playground'), findsOneWidget);

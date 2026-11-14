@@ -29,32 +29,34 @@ class _TrackedState extends State<_Tracked> {
 }
 
 void main() {
-  testWidgets('retained items larger than the root are hidden while closed', (
-    tester,
-  ) async {
-    const root = ValueKey('root');
-    const item = ValueKey('large');
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: PuckOverlay(
-          maintainMenuState: true,
-          menuItemDiameter: 80,
-          puck: ColoredBox(key: root, color: Colors.blue),
-          menuItems: [ColoredBox(key: item, color: Colors.green)],
-          child: SizedBox.expand(),
+  for (final diameter in [48.0, 64.0, 80.0]) {
+    testWidgets('retained ${diameter}px items are hidden while closed', (
+      tester,
+    ) async {
+      const root = ValueKey('root');
+      const item = ValueKey('large');
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PuckOverlay(
+            maintainMenuState: true,
+            menuItemDiameter: diameter,
+            puck: const ColoredBox(key: root, color: Colors.blue),
+            menuItems: const [ColoredBox(key: item, color: Colors.green)],
+            child: const SizedBox.expand(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byKey(item), findsNothing);
-    expect(find.byKey(item, skipOffstage: false), findsOneWidget);
-    await tester.tap(find.byKey(root));
-    await tester.pumpAndSettle();
-    expect(find.byKey(item), findsOneWidget);
-    await tester.tap(find.byKey(root));
-    await tester.pumpAndSettle();
-    expect(find.byKey(item), findsNothing);
-  });
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(item), findsNothing);
+      expect(find.byKey(item, skipOffstage: false), findsOneWidget);
+      await tester.tap(find.byKey(root));
+      await tester.pumpAndSettle();
+      expect(find.byKey(item), findsOneWidget);
+      await tester.tap(find.byKey(root));
+      await tester.pumpAndSettle();
+      expect(find.byKey(item), findsNothing);
+    });
+  }
 
   testWidgets(
     'maintained tier layers reuse prepared item state and stay inert when closed',
@@ -97,7 +99,8 @@ void main() {
           isTrue,
         );
         final states = [
-          for (var i = 0; i < 4; i++) tester.state(find.byKey(ValueKey(i))),
+          for (var i = 0; i < 4; i++)
+            tester.state(find.byKey(ValueKey(i), skipOffstage: false)),
         ];
         await tester.tap(find.byKey(root));
         await tester.pumpAndSettle();
@@ -110,9 +113,12 @@ void main() {
         await tester.tap(find.byKey(root));
         await tester.pumpAndSettle();
         for (var i = 0; i < 4; i++) {
-          expect(tester.state(find.byKey(ValueKey(i))), same(states[i]));
           expect(
-            (tester.getCenter(find.byKey(ValueKey(i))) -
+            tester.state(find.byKey(ValueKey(i), skipOffstage: false)),
+            same(states[i]),
+          );
+          expect(
+            (tester.getCenter(find.byKey(ValueKey(i), skipOffstage: false)) -
                     tester.getCenter(find.byKey(root)))
                 .distance,
             lessThan(8.001),
@@ -131,7 +137,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 16));
         for (var i = 0; i < 4; i++) {
           expect(
-            (tester.getCenter(find.byKey(ValueKey(i))) -
+            (tester.getCenter(find.byKey(ValueKey(i), skipOffstage: false)) -
                     tester.getCenter(find.byKey(root)))
                 .distance,
             lessThan(0.001),

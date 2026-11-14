@@ -7,9 +7,10 @@ void main() => runApp(
 
 /// A live view of the real layout solver, without menu items or item springs.
 class MenuLayoutDemo extends StatefulWidget {
-  const MenuLayoutDemo({super.key, this.onBack});
+  const MenuLayoutDemo({super.key, this.embedded = false});
 
-  final VoidCallback? onBack;
+  /// Shares the main app's background and tab bar when embedded.
+  final bool embedded;
 
   @override
   State<MenuLayoutDemo> createState() => _MenuLayoutDemoState();
@@ -35,30 +36,24 @@ class _MenuLayoutDemoState extends State<MenuLayoutDemo> {
     child: Stack(
       fit: StackFit.expand,
       children: [
-        Scaffold(
-          appBar: AppBar(
-            title: const Text('Menu layout', style: TextStyle(fontSize: 17)),
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            leading: widget.onBack == null
-                ? null
-                : IconButton(
-                    tooltip: 'Back to playground',
-                    onPressed: widget.onBack,
-                    icon: const Icon(Icons.arrow_back),
-                  ),
-            actions: [
-              IconButton(
-                tooltip: 'Reset layout',
-                icon: const Icon(Icons.restart_alt),
-                onPressed: () {
-                  _expanded.value = true;
-                  setState(() => _reset++);
-                },
-              ),
-            ],
+        if (!widget.embedded)
+          Scaffold(
+            appBar: AppBar(
+              title: const Text('Menu layout', style: TextStyle(fontSize: 17)),
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              actions: [
+                IconButton(
+                  tooltip: 'Reset layout',
+                  icon: const Icon(Icons.restart_alt),
+                  onPressed: () {
+                    _expanded.value = true;
+                    setState(() => _reset++);
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
         SafeArea(
           child: PuckOverlay(
             key: ValueKey(_reset),

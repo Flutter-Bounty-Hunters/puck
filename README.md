@@ -176,6 +176,12 @@ side wall. It keeps the tier radii when rotation can preserve the fan's span
 by up to 50%, then narrows the fan when necessary. The fixed inner tier limits
 the useful span, so its boundary collisions do not cause pointless compression.
 The fan widens and the tiers spread back out as space becomes available again.
+Before settling on compressed tiers, the layout compares larger radii with
+narrower arcs using the tightest circular-item clearance and the radial space
+between occupied tiers. It favors useful puck spacing, then restoring the
+resting radii once spacing is comfortable. Improvements enter gradually along
+the existing rotation direction; the inner radius, shared end caps, 50% gap
+compression limit, and full-circle layouts remain intact.
 In open corridors, arcs can extend beyond 180 degrees and become full 360-degree
 rings when space permits, avoiding a forced switch from one side of the root
 to the other. Perimeter constraints continue to favor smooth rotation.
@@ -195,22 +201,24 @@ The layout preview guides follow the root's actual position during that motion;
 the destination anchor remains fixed. The preview uses the same space-aware
 layout before and after release, restoring radii only as room becomes available.
 
-Set `showTierCurves: true` to connect each tier's items with a 6px circular arc.
+Set `showTierCurves: true` to connect each tier's items with a 4px circular arc,
+light gray in light mode and dark gray in dark mode.
 The curves track the live spring positions, fade near the root during opening
 and closing, and are clipped out of every puck, including translucent ones.
 The demo enables these curves independently of debug visuals.
 
-Tier arcs use direct canvas arc strokes and analytic circular cutouts, without
-boolean clipping paths or offscreen layers. The arc layer has its own repaint
+Each tier uses one canvas arc stroke, clipped against the actual puck circles.
+The circular cutouts apply once across the connector layer, without boolean
+path operations or offscreen layers. The arc layer has its own repaint
 boundary, caches tier ordering, and coalesces item notifications once per frame.
 Run `flutter test benchmark/tier_curve_benchmark_test.dart` to measure CPU paint
 recording time for the demo's 23 items (this excludes GPU raster time).
 
 ### Preparing expensive menu content
 
-`maintainMenuState: true` keeps item subtrees ready beneath the root between
+`maintainMenuState: true` keeps item subtrees mounted offstage between
 opens. This trades some startup work and retained memory for lower tap latency.
-Closed items ignore input and semantics, and track the root without running
+Closed items do not paint, ignore input and semantics, and track the root without running
 springs. The default remains `false`, disposing items when they collapse.
 
 `menuTierBuilder: (context, tier, child) => ...` wraps one tier's positioned
@@ -224,7 +232,7 @@ surfaces overlap while animating.
 
 The demo starts immediately with its menu closed. It has no startup cover,
 spinner, scripted open/close cycle, or readiness gate for input. Real item states
-remain prepared beneath the root with `maintainMenuState`.
+remain mounted offstage with `maintainMenuState`.
 
 Each menu glass layer also queues a disposable, glass-only offscreen scene during
 idle time. Preparation is serialized, uses no user item widgets or callbacks,
