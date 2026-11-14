@@ -8,6 +8,40 @@ import 'package:puck_example/layout_demo.dart';
 import 'package:puck/src/puck_layout_preview_painter.dart';
 
 void main() {
+  testWidgets('chat heads coexist with the tiered menu and Layout tab', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const PuckDemo());
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('example-menu')), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-menu')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('chat-root')));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Chat with Maya'), findsOneWidget);
+    await tester.tap(find.byTooltip('Chat with Maya'));
+    await tester.pumpAndSettle();
+    expect(find.text('Chatting with Maya'), findsOneWidget);
+    await tester.tap(find.byTooltip('More conversations'));
+    await tester.pumpAndSettle();
+    expect(find.text('More conversations'), findsOneWidget);
+    await tester.tap(find.byTooltip('Show debug visuals'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widgetList<PuckOverlay>(find.byType(PuckOverlay))
+          .every((overlay) => overlay.showDebugAnchors),
+      isTrue,
+    );
+    await tester.tap(find.text('Layout'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('chat-root')), findsNothing);
+    expect(find.byType(MenuLayoutDemo), findsOneWidget);
+    await tester.tap(find.text('Example'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Chat with Maya'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('layout tab opens, preserves position, resets, and returns', (
     tester,
   ) async {
@@ -58,7 +92,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.byKey(const ValueKey('menu-warmup-cover')), findsNothing);
       expect(
-        tester.widget<PuckOverlay>(find.byType(PuckOverlay)).menuExpanded,
+        tester
+            .widget<PuckOverlay>(find.byKey(const ValueKey('example-menu')))
+            .menuExpanded,
         isNull,
       );
       await tester.tap(find.byTooltip('Switch to dark mode'));
