@@ -280,6 +280,7 @@ class _PuckDemoState extends State<PuckDemo> {
           children: [
             PuckMenu.singleLevel(
               key: const ValueKey('chat-menu'),
+              id: 'demo-chat',
               layout: const PuckMenuLayout(
                 initialEdge: PuckEdge.left,
                 diameter: 64,
@@ -311,6 +312,7 @@ class _PuckDemoState extends State<PuckDemo> {
             ),
             PuckMenu.multiLevel(
               key: const ValueKey('example-menu'),
+              id: 'demo-puck',
               showRopes: false,
               debug: PuckMenuDebug(
                 showLevelCurves: true,

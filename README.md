@@ -25,6 +25,7 @@ spring back to the nearest screen edge.
 - **Adapts to the space.** Menu arcs adjust around screen edges, safe areas, and the keyboard.
 - **Your widgets, your style.** Build the root and items from icons, photos, glass, or any Flutter widgets.
 - **Spring animation.** Items fan out and return beneath the root, with staggered motion across levels.
+- **Remembers its place.** Give a menu an `id` to restore its last docked position, even after an app restart.
 
 ## Add a floating menu
 

@@ -7,12 +7,21 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:puck_example/layout_demo.dart';
 import 'package:puck/src/puck_layout_preview_painter.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as glass;
+import 'package:puck/src/puck_anchor_storage.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 Finder tab(String label) => find
     .descendant(of: find.byType(glass.GlassTabBar), matching: find.text(label))
     .first;
 
 void main() {
+  setUp(() {
+    PuckAnchorStorage.resetCache();
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
   testWidgets(
     'bottom tabs respect safe areas without moving pucks for a fitting keyboard',
     (tester) async {

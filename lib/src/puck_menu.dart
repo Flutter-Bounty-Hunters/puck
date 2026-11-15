@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/physics.dart';
@@ -14,6 +15,7 @@ import 'puck_menu_debug.dart';
 import 'puck_menu_layout.dart';
 import 'puck_anchor_painter.dart';
 import 'puck_layout_preview_painter.dart';
+import 'puck_anchor_storage.dart';
 
 part 'puck_menu_controller.dart';
 
@@ -31,6 +33,7 @@ class PuckMenu extends StatefulWidget {
   const PuckMenu.singleLevel({
     super.key,
     this.controller,
+    this.id,
     required this.rootPuck,
     required List<Widget> puckItems,
     this.layout = const PuckMenuLayout(),
@@ -44,6 +47,7 @@ class PuckMenu extends StatefulWidget {
   const PuckMenu.multiLevel({
     super.key,
     this.controller,
+    this.id,
     required this.rootPuck,
     required List<List<Widget>> puckItems,
     this.layout = const PuckMenuLayout(),
@@ -56,6 +60,13 @@ class PuckMenu extends StatefulWidget {
   /// External commands and lifecycle notifications for this menu.
   /// The caller owns and disposes the controller.
   final PuckMenuController? controller;
+
+  /// Optional persistent identity for this menu. A stable ID automatically
+  /// saves and restores its docking edge and proportional vertical position,
+  /// including across navigation and app restarts. Menus without an ID do not
+  /// access storage. Missing/invalid saved data uses [layout]'s initial position.
+  /// Use distinct IDs for menus that should remember independent positions.
+  final String? id;
 
   /// Developer-provided content, clipped to [PuckMenuLayout.diameter].
   final Widget rootPuck;
@@ -101,15 +112,52 @@ class _PuckMenuState extends State<PuckMenu>
   bool _draggedWithKeyboard = false;
   SpringSimulation? _returnSpring;
   double? _returnTargetY;
+  int _anchorRequest = 0;
+  SavedPuckAnchor? _pendingRestoredAnchor;
+  bool _resetAnchor = false;
+  String? _saveAnchorOnSettle;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadAnchor();
     _attachController();
     if (widget.controller != null) {
       _applyControllerRequestAfterBuild();
     }
+  }
+
+  void _loadAnchor({bool reset = false}) {
+    final request = ++_anchorRequest;
+    final id = widget.id;
+    _pendingRestoredAnchor = id == null ? null : PuckAnchorStorage.cached(id);
+    if (reset) {
+      _resetAnchor = true;
+      _saveAnchorOnSettle = null;
+      _keyboardOriginalY = null;
+    }
+    if (id == null || _pendingRestoredAnchor != null) return;
+    unawaited(
+      PuckAnchorStorage.read(id).then((anchor) {
+        if (!mounted ||
+            request != _anchorRequest ||
+            widget.id != id ||
+            anchor == null) {
+          return;
+        }
+        setState(() => _pendingRestoredAnchor = anchor);
+      }),
+    );
+  }
+
+  void _saveAnchor(double y) {
+    final id = widget.id;
+    if (id == null || _size == null || _bottom <= 0) return;
+    PuckAnchorStorage.save(id, (
+      edge: _edge,
+      verticalAlignment: (y / _bottom).clamp(0.0, 1.0),
+    ));
   }
 
   void _attachController() {
@@ -215,7 +263,13 @@ class _PuckMenuState extends State<PuckMenu>
         _awaitingSettle = false;
       }
     });
-    if (settled) widget.controller?._settled();
+    if (settled) {
+      if (_saveAnchorOnSettle != null && _saveAnchorOnSettle == widget.id) {
+        _saveAnchor(_position.dy);
+      }
+      _saveAnchorOnSettle = null;
+      widget.controller?._settled();
+    }
   }
 
   void _dock(Offset velocity) {
@@ -256,7 +310,11 @@ class _PuckMenuState extends State<PuckMenu>
         _returnSpring != null;
     if (_awaitingSettle) widget.controller?._isSettled = false;
     _ticker.start();
-    if (released) widget.controller?._dragReleased();
+    if (released) {
+      _saveAnchorOnSettle = widget.id;
+      _saveAnchor(_vertical!.finalX.clamp(0.0, _bottom));
+      widget.controller?._dragReleased();
+    }
   }
 
   void _toggleMenu() {
@@ -1034,6 +1092,7 @@ class _PuckMenuState extends State<PuckMenu>
   @override
   void didUpdateWidget(covariant PuckMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id) _loadAnchor(reset: true);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller?._detach(this);
       _attachController();
@@ -1112,9 +1171,20 @@ class _PuckMenuState extends State<PuckMenu>
             keyboard == 0 &&
             _keyboardOriginalY != null &&
             (_keyboardHeight > 0 || _size != size || _geometryChanged);
+        // Keyboard-driven moves must never replace a user-chosen anchor.
+        if (_keyboardHeight != keyboard) _saveAnchorOnSettle = null;
         _keyboardHeight = keyboard;
-        final firstLayout = _size == null;
-        if (_size != size || _geometryChanged) {
+        final firstLayout = _size == null || _resetAnchor;
+        if (_resetAnchor) {
+          _resetAnchor = false;
+          _edge = widget.layout.initialEdge;
+          _ticker.stop();
+          _returnSpring = null;
+          _returnTargetY = null;
+          _awaitingSettle = false;
+          widget.controller?._isSettled = !_dragging;
+        }
+        if (firstLayout || _size != size || _geometryChanged) {
           final horizontalGeometryChanged =
               firstLayout || _size!.width != size.width || _geometryChanged;
           _geometryChanged = false;
@@ -1143,6 +1213,19 @@ class _PuckMenuState extends State<PuckMenu>
                 ? _bottom * widget.layout.initialVerticalAlignment
                 : _position.dy.clamp(0, _bottom),
           );
+        }
+        final restored = _pendingRestoredAnchor;
+        if (restored != null) {
+          _pendingRestoredAnchor = null;
+          _ticker.stop();
+          _edge = restored.edge;
+          _position = Offset(
+            _edge == PuckEdge.left ? _left : _right,
+            _bottom * restored.verticalAlignment,
+          );
+          _menuLayoutKey = null;
+          _tierPhases.clear();
+          _tierReversed.clear();
         }
         _position = _constrainVertical(_position);
         if (restore) _dock(Offset.zero);
@@ -1277,6 +1360,9 @@ class _PuckMenuState extends State<PuckMenu>
                   behavior: HitTestBehavior.opaque,
                   onTap: _toggleMenu,
                   onPanDown: (details) {
+                    // A late disk read must not move a puck the user touched.
+                    _anchorRequest++;
+                    _pendingRestoredAnchor = null;
                     _ticker.stop();
                     _grabOffset = details.localPosition;
                   },
