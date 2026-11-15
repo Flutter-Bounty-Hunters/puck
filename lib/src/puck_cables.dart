@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import 'puck_rope_style.dart';
+import 'puck_menu.dart' show PuckRopeStyle;
 
 /// Geometry shared by the independently animated items and their cable layer.
 class PuckCables extends ChangeNotifier {

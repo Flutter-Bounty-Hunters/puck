@@ -81,11 +81,11 @@ void main() {
           home: PuckMenu.multiLevel(
             rootPuck: const ColoredBox(key: root, color: Colors.blue),
             puckItems: [
-              for (var tier = 0; tier < 2; tier++)
+              for (var level = 0; level < 2; level++)
                 [
                   for (var item = 0; item < 2; item++)
                     _Tracked(
-                      key: ValueKey(tier * 2 + item),
+                      key: ValueKey(level * 2 + item),
                       onMount: () => itemMounts++,
                       onDispose: () => itemDisposals++,
                     ),

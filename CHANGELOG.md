@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Add `ArcStyle` to customize menu arc colors and thickness.
 - Add optional menu IDs to automatically save and restore docked positions across navigation and app restarts.
 - Add multi-level menus with staggered opening and closing animations and adaptive arcs that can expand into full circles.
 - Add `PuckMenuController` for external control and lifecycle callbacks for expansion, collapse, dragging, release, and docking.

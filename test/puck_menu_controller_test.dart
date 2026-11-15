@@ -40,17 +40,17 @@ class _Listener implements PuckMenuListener {
   }
 }
 
-Widget _menu(PuckMenuController controller, {List<List<Widget>>? tiers}) =>
+Widget _menu(PuckMenuController controller, {List<List<Widget>>? levels}) =>
     MaterialApp(
       home: PuckMenu.multiLevel(
         controller: controller,
 
         rootPuck: const ColoredBox(key: ValueKey('root'), color: Colors.blue),
         puckItems:
-            tiers ??
+            levels ??
             [
-              for (var tier = 0; tier < 3; tier++)
-                [ColoredBox(key: ValueKey(tier), color: Colors.green)],
+              for (var level = 0; level < 3; level++)
+                [ColoredBox(key: ValueKey(level), color: Colors.green)],
             ],
       ),
     );
@@ -224,7 +224,7 @@ void main() {
     addTearDown(controller.dispose);
     final listener = _Listener();
     controller.addListener(listener);
-    await tester.pumpWidget(_menu(controller, tiers: []));
+    await tester.pumpWidget(_menu(controller, levels: []));
     controller.open();
     controller.close();
     expect(listener.calls, [
@@ -237,7 +237,7 @@ void main() {
     await tester.pumpWidget(_menu(controller));
     controller.open();
     await tester.pump(const Duration(milliseconds: 60));
-    await tester.pumpWidget(_menu(controller, tiers: []));
+    await tester.pumpWidget(_menu(controller, levels: []));
     await tester.pumpAndSettle();
     expect(listener.calls, ['expanding', 'expanded']);
     controller.close();

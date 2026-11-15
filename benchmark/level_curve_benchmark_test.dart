@@ -2,13 +2,13 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:puck/src/puck_tier_curves.dart';
+import 'package:puck/src/puck_level_curves.dart';
 
 void main() {
   test('measure demo arc paint CPU time', () {
-    final curves = PuckTierCurves();
+    final curves = PuckLevelCurves();
     var index = 0;
-    for (final (tier, count, radius) in [
+    for (final (level, count, radius) in [
       (0, 4, 80.0),
       (1, 7, 168.0),
       (2, 12, 264.0),
@@ -23,12 +23,12 @@ void main() {
                 Offset(math.cos(angle), math.sin(angle)) * radius,
             radius: 24,
           ),
-          tier: tier,
+          level: level,
           order: i,
         );
       }
     }
-    final painter = PuckTierCurvePainter(
+    final painter = PuckLevelCurvePainter(
       curves,
       parentBounds: const Rect.fromLTWH(342, 390, 64, 64),
     );

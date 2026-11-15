@@ -64,7 +64,7 @@ void main() {
     },
   );
 
-  testWidgets('chat heads coexist with the tiered menu and Layout tab', (
+  testWidgets('chat heads coexist with the leveled menu and Layout tab', (
     tester,
   ) async {
     await tester.pumpWidget(const PuckDemo());

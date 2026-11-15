@@ -56,9 +56,9 @@ void main() {
         final current = guides();
         expect(current.center, tester.getCenter(find.byKey(root)));
         final movement = (current.center - previous.center).distance;
-        for (var tier = 0; tier < current.radii.length; tier++) {
+        for (var level = 0; level < current.radii.length; level++) {
           expect(
-            (current.radii[tier] - previous.radii[tier]).abs(),
+            (current.radii[level] - previous.radii[level]).abs(),
             lessThanOrEqualTo(movement + .0001),
             reason: 'docking frame $frame',
           );

@@ -29,11 +29,11 @@ void main() {
                 controller: controller,
                 rootPuck: const ColoredBox(key: root, color: Colors.blue),
                 puckItems: [
-                  for (var tier = 0; tier < counts.length; tier++)
+                  for (var level = 0; level < counts.length; level++)
                     List.generate(
-                      counts[tier],
+                      counts[level],
                       (i) => ColoredBox(
-                        key: ValueKey((tier, i)),
+                        key: ValueKey((level, i)),
                         color: Colors.green,
                       ),
                     ),
@@ -44,16 +44,16 @@ void main() {
           await tester.pumpAndSettle();
           void checkOrder({bool settled = false}) {
             final center = tester.getCenter(find.byKey(root));
-            for (var tier = 0; tier < counts.length; tier++) {
+            for (var level = 0; level < counts.length; level++) {
               final points = [
-                for (var i = 0; i < counts[tier]; i++)
+                for (var i = 0; i < counts[level]; i++)
                   if (settled)
-                    tester.getCenter(find.byKey(ValueKey((tier, i))))
+                    tester.getCenter(find.byKey(ValueKey((level, i))))
                   else
                     tester
                             .widget<SpringPuck>(
                               find.ancestor(
-                                of: find.byKey(ValueKey((tier, i))),
+                                of: find.byKey(ValueKey((level, i))),
                                 matching: find.byType(SpringPuck),
                               ),
                             )

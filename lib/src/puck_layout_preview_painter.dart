@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// Shows the solved tier geometry without creating animated menu items.
+/// Shows the solved level geometry without creating animated menu items.
 class PuckLayoutPreviewPainter extends CustomPainter {
   const PuckLayoutPreviewPainter({
     required this.center,
@@ -25,16 +25,16 @@ class PuckLayoutPreviewPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     // Filled pie slices sit behind all bands and center-radius guides. Paint
-    // farthest first so every tier's sector remains distinguishable.
+    // farthest first so every level's sector remains distinguishable.
     final angles = arc;
     if (angles != null) {
       final (start, end) = angles;
-      for (var tier = radii.length - 1; tier >= 0; tier--) {
+      for (var level = radii.length - 1; level >= 0; level--) {
         paint
           ..style = PaintingStyle.fill
-          ..color = _colors[tier % _colors.length].withValues(alpha: 0.16);
+          ..color = _colors[level % _colors.length].withValues(alpha: 0.16);
         canvas.drawArc(
-          Rect.fromCircle(center: center, radius: radii[tier]),
+          Rect.fromCircle(center: center, radius: radii[level]),
           start,
           end - start,
           true,
@@ -42,18 +42,18 @@ class PuckLayoutPreviewPainter extends CustomPainter {
         );
       }
     }
-    for (var tier = 0; tier < radii.length; tier++) {
+    for (var level = 0; level < radii.length; level++) {
       paint
         ..style = PaintingStyle.stroke
         ..strokeWidth = itemDiameter
-        ..color = _colors[tier % _colors.length].withValues(alpha: 0.13);
-      canvas.drawCircle(center, radii[tier], paint);
+        ..color = _colors[level % _colors.length].withValues(alpha: 0.13);
+      canvas.drawCircle(center, radii[level], paint);
     }
-    for (var tier = 0; tier < radii.length; tier++) {
+    for (var level = 0; level < radii.length; level++) {
       paint
         ..strokeWidth = 1.25
-        ..color = _colors[tier % _colors.length];
-      canvas.drawCircle(center, radii[tier], paint);
+        ..color = _colors[level % _colors.length];
+      canvas.drawCircle(center, radii[level], paint);
     }
   }
 

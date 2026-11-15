@@ -7,7 +7,7 @@ import 'package:puck/src/puck_anchor_painter.dart';
 
 void main() {
   for (final width in [402.0, 1000.0]) {
-    testWidgets('tiers unfold into distinct, evenly spaced rings at $width', (
+    testWidgets('levels unfold into distinct, evenly spaced rings at $width', (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(Size(width, 1000));
@@ -49,15 +49,15 @@ void main() {
       expect(ring.arc!.$2 - ring.arc!.$1, closeTo(2 * math.pi, 1e-7));
       if (width == 1000) expect(ring.radii, resting);
       var offset = 1;
-      for (var tier = 0; tier < 3; tier++) {
-        final count = [4, 7, 12][tier];
+      for (var level = 0; level < 3; level++) {
+        final count = [4, 7, 12][level];
         final points = ring.anchors.sublist(offset, offset + count);
         final angles = points.map((p) => (p - ring.center).direction).toList()
           ..sort();
         for (var i = 0; i < count; i++) {
           expect(
             (points[i] - ring.center).distance,
-            closeTo(ring.radii[tier], 1e-6),
+            closeTo(ring.radii[level], 1e-6),
           );
           expect(
             (angles[(i + 1) % count] - angles[i]) % (2 * math.pi),
@@ -65,8 +65,8 @@ void main() {
           );
         }
         expect(
-          ring.radii[tier],
-          greaterThanOrEqualTo(80 + (resting[tier] - 80) * .5),
+          ring.radii[level],
+          greaterThanOrEqualTo(80 + (resting[level] - 80) * .5),
         );
         offset += count;
       }

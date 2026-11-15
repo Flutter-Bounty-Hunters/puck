@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'puck_menu_layout.dart';
+import 'puck_menu.dart' show PuckEdge;
 
 typedef SavedPuckAnchor = ({PuckEdge edge, double verticalAlignment});
 

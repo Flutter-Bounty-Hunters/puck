@@ -65,9 +65,9 @@ void main() {
           lessThan(.3),
           reason: 'x=$x y=$y before=${previous.arc} after=${current.arc}',
         );
-        for (var tier = 0; tier < current.radii.length; tier++) {
+        for (var level = 0; level < current.radii.length; level++) {
           expect(
-            (current.radii[tier] - previous.radii[tier]).abs(),
+            (current.radii[level] - previous.radii[level]).abs(),
             lessThanOrEqualTo(
               (current.center - previous.center).distance + 1e-4,
             ),
@@ -79,7 +79,7 @@ void main() {
                 (current.arc!.$2 - current.arc!.$1) * point / 16;
             final p =
                 current.center +
-                Offset(math.cos(angle), math.sin(angle)) * current.radii[tier];
+                Offset(math.cos(angle), math.sin(angle)) * current.radii[level];
             expect(p.dx, inInclusiveRange(28 - 1e-6, 374 + 1e-6));
             expect(p.dy, inInclusiveRange(28 - 1e-6, 750 + 1e-6));
           }

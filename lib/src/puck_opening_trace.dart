@@ -19,10 +19,10 @@ class PuckOpeningTrace {
     if (enabled) _active = false;
   }
 
-  static bool representative(int tier, int order) =>
+  static bool representative(int level, int order) =>
       enabled &&
       _active &&
-      _representatives.putIfAbsent(tier, () => order) == order;
+      _representatives.putIfAbsent(level, () => order) == order;
 
   static void instant(String name, [Map<String, Object?> args = const {}]) {
     if (!enabled || !_active) return;

@@ -7,11 +7,11 @@ import 'package:puck/puck.dart';
 
 const performanceVariants = [
   'solid_single',
-  'solid_three_tier',
+  'solid_three_level',
   'photos_single',
-  'photos_three_tier',
+  'photos_three_level',
   'glass_single',
-  'glass_three_tier',
+  'glass_three_level',
 ];
 const performanceRootDiameter = 64.0;
 const performanceItemDiameter = 48.0;
@@ -61,10 +61,10 @@ class PerformanceConfig {
   final bool curves;
   final bool automated;
   final bool openingProfile;
-  bool get threeTier => variant.endsWith('three_tier');
+  bool get threeLevel => variant.endsWith('three_level');
   bool get glass => variant.startsWith('glass_');
   bool get photos => variant.startsWith('photos_');
-  List<int> get counts => threeTier ? const [4, 7, 12] : const [4];
+  List<int> get counts => threeLevel ? const [4, 7, 12] : const [4];
   int get itemCount => counts.fold(0, (sum, count) => sum + count);
 
   factory PerformanceConfig.fromRoute(String route) {
@@ -95,7 +95,7 @@ class PerformanceConfig {
   Map<String, Object> toJson() => {
     'variant': variant,
     'opening_profile': openingProfile,
-    'tier_counts': counts,
+    'level_counts': counts,
     'item_count': itemCount,
     'repeats': repeats,
     'start_delay_ms': startDelayMs,
@@ -224,7 +224,7 @@ class _PerformanceDemoState extends State<PerformanceDemo> {
   @override
   Widget build(BuildContext context) {
     var index = 0;
-    final tiers = [
+    final levels = [
       for (final count in widget.config.counts)
         [for (var i = 0; i < count; i++) _content(index++)],
     ];
@@ -267,7 +267,7 @@ class _PerformanceDemoState extends State<PerformanceDemo> {
                 ),
                 controller: _handles.controller,
                 debug: PuckMenuDebug(showLevelCurves: widget.config.curves),
-                puckItems: tiers,
+                puckItems: levels,
                 rootPuck: _content(0, root: true),
               ),
             ),

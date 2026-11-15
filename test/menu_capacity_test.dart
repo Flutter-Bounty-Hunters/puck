@@ -51,7 +51,7 @@ void main() {
       await tester.pump();
       final improved = layout();
       // Preserving the angular span used to shrink the outer radius to 172px
-      // here, leaving the 48px pucks overlapping across the innermost tier gap.
+      // here, leaving the 48px pucks overlapping across the innermost level gap.
       expect(improved.radii.first, 80);
       expect(improved.radii.last, greaterThan(195));
       expect(improved.arc!.$2 - improved.arc!.$1, lessThan(math.pi));
@@ -61,26 +61,26 @@ void main() {
           expect(
             (points[i] - points[j]).distance - 48,
             greaterThan(2),
-            reason: 'items $i and $j must fit, including across tiers',
+            reason: 'items $i and $j must fit, including across levels',
           );
         }
       }
       var offset = 1;
-      for (var tier = 0; tier < counts.length; tier++) {
-        for (final end in [0, counts[tier] - 1]) {
+      for (var level = 0; level < counts.length; level++) {
+        for (final end in [0, counts[level] - 1]) {
           final angle = end == 0 ? improved.arc!.$1 : improved.arc!.$2;
           final point =
               improved.center +
-              Offset(math.cos(angle), math.sin(angle)) * improved.radii[tier];
+              Offset(math.cos(angle), math.sin(angle)) * improved.radii[level];
           expect(
             improved.anchors
-                .sublist(offset, offset + counts[tier])
+                .sublist(offset, offset + counts[level])
                 .map((anchor) => (anchor - point).distance)
                 .reduce(math.min),
             lessThan(1e-6),
           );
         }
-        offset += counts[tier];
+        offset += counts[level];
       }
 
       var previous = improved;
@@ -104,22 +104,22 @@ void main() {
           lessThan(.15),
           reason: 'span jump at $target',
         );
-        for (var tier = 0; tier < counts.length; tier++) {
+        for (var level = 0; level < counts.length; level++) {
           expect(
-            (current.radii[tier] - previous.radii[tier]).abs(),
+            (current.radii[level] - previous.radii[level]).abs(),
             lessThan(5),
             reason: 'radius jump at $target',
           );
           expect(
-            current.radii[tier],
-            inInclusiveRange(80 + (resting[tier] - 80) * .5, resting[tier]),
+            current.radii[level],
+            inInclusiveRange(80 + (resting[level] - 80) * .5, resting[level]),
           );
           for (var i = 0; i <= 16; i++) {
             final a =
                 current.arc!.$1 + (current.arc!.$2 - current.arc!.$1) * i / 16;
             final point =
                 current.center +
-                Offset(math.cos(a), math.sin(a)) * current.radii[tier];
+                Offset(math.cos(a), math.sin(a)) * current.radii[level];
             expect(point.dx, inInclusiveRange(28 - 1e-6, 374 + 1e-6));
             expect(point.dy, inInclusiveRange(28 - 1e-6, 750 + 1e-6));
           }

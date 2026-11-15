@@ -53,7 +53,7 @@ Map<String, dynamic> fixture() => {
       },
     },
     {
-      'variant': 'glass_three_tier',
+      'variant': 'glass_three_level',
       'launch': 1,
       'error': 'Connection lost',
       'report': {
@@ -66,6 +66,12 @@ Map<String, dynamic> fixture() => {
 };
 
 void main() {
+  test('saved reports retain their variants after the level rename', () {
+    final launch = PerformanceLaunch({'variant': 'glass_three_tier'});
+    expect(launch.variant, 'glass_three_level');
+    expect(variantLabel(launch.variant), 'Glass · 3 levels');
+  });
+
   test(
     'raw reports drive charts; failed launches and large traces stay out',
     () {
@@ -149,7 +155,7 @@ void main() {
     await tester.tap(find.byTooltip('Refresh results'));
     await tester.pumpAndSettle();
     expect(find.text('Menu profiles'), findsOneWidget);
-    expect(find.text('Solid color / 1 tier'), findsOneWidget);
+    expect(find.text('Solid color / 1 level'), findsOneWidget);
     expect(find.byType(DropdownButtonFormField<String>), findsNothing);
     expect(find.text('A real log'), findsNothing);
     final chart = tester.widget<MenuProfileChart>(
@@ -283,7 +289,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(details);
     await tester.pumpAndSettle();
-    final launch = find.text('Solid · 1 tier · launch 1');
+    final launch = find.text('Solid · 1 level · launch 1');
     await tester.ensureVisible(launch);
     await tester.pumpAndSettle();
     await tester.tap(launch);
@@ -310,7 +316,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Try a demo'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Solid · 1 tier').last);
+    await tester.tap(find.text('Solid · 1 level').last);
     await tester.pumpAndSettle();
     expect(find.byType(PerformanceDemo), findsOneWidget);
     await tester.tap(find.byType(BackButton));

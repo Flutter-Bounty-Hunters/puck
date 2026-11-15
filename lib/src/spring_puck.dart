@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import 'puck_cables.dart';
 import 'puck_opening_trace.dart';
-import 'puck_tier_curves.dart';
+import 'puck_level_curves.dart';
 
 /// Retargets a two-dimensional spring without discarding its current velocity.
 class SpringPuck extends StatefulWidget {
@@ -19,7 +19,7 @@ class SpringPuck extends StatefulWidget {
     required this.cables,
     required this.showRopes,
     this.curves,
-    this.tier = 0,
+    this.level = 0,
     this.order = 0,
     required this.target,
     required this.diameter,
@@ -39,8 +39,8 @@ class SpringPuck extends StatefulWidget {
   final Stopwatch? motionClock;
   final PuckCables cables;
   final bool showRopes;
-  final PuckTierCurves? curves;
-  final int tier;
+  final PuckLevelCurves? curves;
+  final int level;
   final int order;
 
   final Offset target;
@@ -86,16 +86,16 @@ class _SpringPuckState extends State<SpringPuck>
   }
 
   void _scheduleRetarget() {
-    if (PuckOpeningTrace.representative(widget.tier, widget.order)) {
+    if (PuckOpeningTrace.representative(widget.level, widget.order)) {
       PuckOpeningTrace.instant('spring.schedule', {
-        'tier': widget.tier,
+        'level': widget.level,
         'delay_us': widget.delay.inMicroseconds,
       });
     }
     _delayTimer?.cancel();
     _delayTimer = null;
     _ticker.stop();
-    // Tier delays begin at the request, not after the layout/preparation frame.
+    // Level delays begin at the request, not after the layout/preparation frame.
     final remaining =
         widget.delay - (widget.motionClock?.elapsed ?? Duration.zero);
     void launch() {
@@ -117,8 +117,8 @@ class _SpringPuckState extends State<SpringPuck>
 
   void _retarget({Duration elapsed = Duration.zero}) {
     _traceTicks = 0;
-    if (PuckOpeningTrace.representative(widget.tier, widget.order)) {
-      PuckOpeningTrace.instant('spring.retarget', {'tier': widget.tier});
+    if (PuckOpeningTrace.representative(widget.level, widget.order)) {
+      PuckOpeningTrace.instant('spring.retarget', {'level': widget.level});
     }
     _ticker.stop();
     _x = SpringSimulation(
@@ -147,8 +147,10 @@ class _SpringPuckState extends State<SpringPuck>
         ? (WidgetsBinding.instance.samplingClock.stopwatch()..start())
         : null;
     _ticker.start();
-    if (PuckOpeningTrace.representative(widget.tier, widget.order)) {
-      PuckOpeningTrace.instant('spring.ticker.started', {'tier': widget.tier});
+    if (PuckOpeningTrace.representative(widget.level, widget.order)) {
+      PuckOpeningTrace.instant('spring.ticker.started', {
+        'level': widget.level,
+      });
     }
     // Layout already has the new target. Sample now so this very frame can
     // paint movement instead of waiting for the next animation callback.
@@ -168,9 +170,9 @@ class _SpringPuckState extends State<SpringPuck>
     final simulationElapsed = elapsed + _elapsedOffset;
     if (PuckOpeningTrace.enabled &&
         _traceTicks++ < 3 &&
-        PuckOpeningTrace.representative(widget.tier, widget.order)) {
+        PuckOpeningTrace.representative(widget.level, widget.order)) {
       PuckOpeningTrace.instant('spring.tick', {
-        'tier': widget.tier,
+        'level': widget.level,
         'tick': _traceTicks,
         'elapsed_us': simulationElapsed.inMicroseconds,
         'eager': eager,
@@ -285,7 +287,7 @@ class _SpringPuckState extends State<SpringPuck>
     widget.curves?.update(
       this,
       bounds: position & Size.square(widget.diameter),
-      tier: widget.tier,
+      level: widget.level,
       order: widget.order,
     );
     if (widget.showRopes) {

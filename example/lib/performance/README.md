@@ -2,23 +2,23 @@
 
 Six independent, manually runnable fixtures:
 
-| Entry point under `lib/performance/` | Circle contents | Tier counts |
+| Entry point under `lib/performance/` | Circle contents | Level counts |
 |---|---|---|
 | `solid_single.dart` | Solid colors + icons | 4 |
-| `solid_three_tier.dart` | Solid colors + icons | 4 / 7 / 12 |
+| `solid_three_level.dart` | Solid colors + icons | 4 / 7 / 12 |
 | `photos_single.dart` | Bundled photographs | 4 |
-| `photos_three_tier.dart` | Bundled photographs | 4 / 7 / 12 |
+| `photos_three_level.dart` | Bundled photographs | 4 / 7 / 12 |
 | `glass_single.dart` | Real glass + icons | 4 |
-| `glass_three_tier.dart` | Real glass + icons | 4 / 7 / 12 |
+| `glass_three_level.dart` | Real glass + icons | 4 / 7 / 12 |
 
 The root uses the same material category as its menu. Every fixture uses the same
 64px root, 48px items, 80px preferred inner radius, right/mid-screen starting
 anchor, static patterned background, safe-area bounds, and item disposal on close.
-The three-tier variants share the same spacing/obstacle solver. Curves and ropes
+The three-level variants share the same spacing/obstacle solver. Curves and ropes
 are off by default to isolate circle content. Photos are distinct local NASA JPEG fixtures
 with credits in `assets/performance/sources.json`; no network requests occur at
-runtime. Photo decoding is not explicitly prewarmed. The single-tier fixture uses five
-distinct photos including its root; the three-tier fixture uses 24.
+runtime. Photo decoding is not explicitly prewarmed. The single-level fixture uses five
+distinct photos including its root; the three-level fixture uses 24.
 Menu items mount on opening and are disposed after collapse; closed menus do
 not build hidden photo or glass widgets. Root content mounts at startup. Later
 opens may still benefit from Flutter's image cache and renderer resource caches.
@@ -31,7 +31,7 @@ glass performance.
 Run a fixture manually from `example`:
 
 ```sh
-flutter run -d <device-id> -t lib/performance/glass_three_tier.dart
+flutter run -d <device-id> -t lib/performance/glass_three_level.dart
 ```
 
 ## Run everything
@@ -126,7 +126,7 @@ Useful controls:
 dart run tool/performance/run.dart --device <id> --start-delay-ms 0
 
 # Glass only; test against a 120Hz frame-work budget:
-dart run tool/performance/run.dart --device <id> --variants glass_single,glass_three_tier --budget-fps 120
+dart run tool/performance/run.dart --device <id> --variants glass_single,glass_three_level --budget-fps 120
 
 # Add arcs consistently across all variants, and save incremental VM traces:
 dart run tool/performance/run.dart --device <id> --curves --trace
@@ -158,7 +158,7 @@ Reports record `interaction_readiness: "resumed_after_frame"` and readiness time
 For first-opening investigation on a physical device:
 
 ```sh
-dart run tool/performance/run.dart --device <id> --device-connection attached --profile-opening --variants glass_three_tier --cold-runs 3 --repeats 1
+dart run tool/performance/run.dart --device <id> --device-connection attached --profile-opening --variants glass_three_level --cold-runs 3 --repeats 1
 ```
 
 This keeps the first opening genuinely first, followed by close/open controls.
@@ -189,7 +189,7 @@ retain their original measurement windows.
 5. **Closed release:** lift the pointer and observe return to the nearest wall,
    including first wall contact and settling.
 6. **Open pull:** open/settle the menu, then perform the same pull.
-7. **Open rapid drag:** the same zigzag with the tiers expanded.
+7. **Open rapid drag:** the same zigzag with the levels expanded.
 8. **Open release:** lift the pointer and observe the root and items settling.
 
 Pull/rapid/release are separate windows within one continuous gesture, preserving

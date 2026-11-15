@@ -31,7 +31,7 @@ void main() {
 
   test('route configuration is explicit and rejects contaminated variants', () {
     final config = PerformanceConfig.fromRoute(
-      '/photos_three_tier?automated=1&repeats=3&budget_fps=120',
+      '/photos_three_level?automated=1&repeats=3&budget_fps=120',
     );
     expect(config.counts, [4, 7, 12]);
     expect(config.automated, isTrue);
@@ -59,7 +59,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       final overlay = tester.widget<PuckMenu>(find.byType(PuckMenu));
-      expect(overlay.puckItems.map((tier) => tier.length), config.counts);
+      expect(overlay.puckItems.map((level) => level.length), config.counts);
       expect(handles.isExpanded, isFalse);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(

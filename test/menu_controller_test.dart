@@ -58,7 +58,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tier delays start at the request and cancel on reversal', (
+  testWidgets('level delays start at the request and cancel on reversal', (
     tester,
   ) async {
     final controller = PuckMenuController();
@@ -70,17 +70,17 @@ void main() {
           controller: controller,
           rootPuck: const ColoredBox(key: root, color: Colors.blue),
           puckItems: [
-            for (var tier = 0; tier < 3; tier++)
-              [ColoredBox(key: ValueKey('tier-$tier'), color: Colors.green)],
+            for (var level = 0; level < 3; level++)
+              [ColoredBox(key: ValueKey('level-$level'), color: Colors.green)],
           ],
         ),
       ),
     );
     await tester.pumpAndSettle();
     final origin = tester.getCenter(find.byKey(root));
-    double distance(int tier) =>
+    double distance(int level) =>
         (tester.getCenter(
-                  find.byKey(ValueKey('tier-$tier'), skipOffstage: false),
+                  find.byKey(ValueKey('level-$level'), skipOffstage: false),
                 ) -
                 origin)
             .distance;
@@ -94,9 +94,9 @@ void main() {
     expect(distance(0), 0);
     controller.close();
     await tester.pumpAndSettle();
-    for (var tier = 0; tier < 3; tier++) {
+    for (var level = 0; level < 3; level++) {
       expect(
-        find.byKey(ValueKey('tier-$tier'), skipOffstage: false),
+        find.byKey(ValueKey('level-$level'), skipOffstage: false),
         findsNothing,
       );
     }

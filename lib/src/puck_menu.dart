@@ -8,11 +8,8 @@ import 'package:flutter/material.dart' show Theme;
 
 import 'spring_puck.dart';
 import 'puck_opening_trace.dart';
-import 'puck_tier_curves.dart';
+import 'puck_level_curves.dart';
 import 'puck_cables.dart';
-import 'puck_rope_style.dart';
-import 'puck_menu_debug.dart';
-import 'puck_menu_layout.dart';
 import 'puck_anchor_painter.dart';
 import 'puck_layout_preview_painter.dart';
 import 'puck_anchor_storage.dart';
@@ -37,6 +34,7 @@ class PuckMenu extends StatefulWidget {
     required this.rootPuck,
     required List<Widget> puckItems,
     this.layout = const PuckMenuLayout(),
+    this.arcStyle = const ArcStyle(),
     this.showRopes = false,
     this.ropeStyle = const PuckRopeStyle(),
     this.debug = const PuckMenuDebug(),
@@ -51,6 +49,7 @@ class PuckMenu extends StatefulWidget {
     required this.rootPuck,
     required List<List<Widget>> puckItems,
     this.layout = const PuckMenuLayout(),
+    this.arcStyle = const ArcStyle(),
     this.showRopes = false,
     this.ropeStyle = const PuckRopeStyle(),
     this.debug = const PuckMenuDebug(),
@@ -82,6 +81,9 @@ class PuckMenu extends StatefulWidget {
   /// Menu sizing, level geometry, docking, and initial root placement.
   final PuckMenuLayout layout;
 
+  /// Appearance of level curves when [PuckMenuDebug.showLevelCurves] is enabled.
+  final ArcStyle arcStyle;
+
   /// Connect menu items to their parent with animated ropes. Off by default.
   /// Disabled ropes are neither painted nor simulated.
   final bool showRopes;
@@ -99,11 +101,105 @@ class PuckMenu extends StatefulWidget {
   State<PuckMenu> createState() => _PuckMenuState();
 }
 
+/// The horizontal edge to which a puck docks.
+enum PuckEdge { left, right }
+
+/// Menu sizing, level geometry, docking, and initial root placement.
+@immutable
+class PuckMenuLayout {
+  const PuckMenuLayout({
+    this.diameter = 64,
+    this.offscreenFraction = 0.1,
+    this.initialEdge = PuckEdge.right,
+    this.initialVerticalAlignment = 0.5,
+    this.levelRadius = 112,
+    this.puckDiameter = 48,
+  }) : assert(diameter > 0 && diameter < double.infinity),
+       assert(offscreenFraction >= 0 && offscreenFraction <= 0.5),
+       assert(initialVerticalAlignment >= 0 && initialVerticalAlignment <= 1),
+       assert(levelRadius > 0 && levelRadius < double.infinity),
+       assert(puckDiameter > 0 && puckDiameter < double.infinity);
+
+  /// Root-puck diameter in logical pixels. Must be positive and finite.
+  final double diameter;
+
+  /// Fraction of the root diameter hidden beyond its docking edge, from 0 to 0.5.
+  final double offscreenFraction;
+
+  /// Docking edge used when the menu is first mounted.
+  final PuckEdge initialEdge;
+
+  /// Initial vertical placement: 0 is the top, 1 the bottom, and 0.5 the middle.
+  final double initialVerticalAlignment;
+
+  /// Preferred distance from the root center to items in the first level.
+  final double levelRadius;
+
+  /// Diameter of each menu item. The root uses [diameter] instead.
+  final double puckDiameter;
+}
+
+/// Appearance of the circular curves connecting menu items on each level.
+@immutable
+class ArcStyle {
+  const ArcStyle({this.color, this.thickness = 4})
+    : assert(thickness > 0 && thickness < double.infinity);
+
+  /// Stroke color. Defaults to light gray in light mode and dark gray in dark
+  /// mode when null.
+  final Color? color;
+
+  /// Stroke width in logical pixels.
+  final double thickness;
+}
+
+/// The two-tone stroke used to paint menu ropes.
+@immutable
+class PuckRopeStyle {
+  const PuckRopeStyle({
+    this.thickness = 3,
+    this.brightColor = const Color(0xFF89939E),
+    this.darkColor = const Color(0x66000000),
+  }) : assert(thickness > 0 && thickness < double.infinity);
+
+  /// Total stroke width in logical pixels.
+  final double thickness;
+
+  /// Color of the inner highlight, painted at half [thickness].
+  final Color brightColor;
+
+  /// Color of the full-width outer stroke.
+  final Color darkColor;
+}
+
+/// Optional visual diagnostics for a puck menu. Disabled by default.
+@immutable
+class PuckMenuDebug {
+  const PuckMenuDebug({
+    this.showAnchors = false,
+    this.showLevelCurves = false,
+    this.layoutPreview = false,
+  });
+
+  /// Draw level perimeters, shared end caps, and red spring-destination dots.
+  /// During dragging the root marker follows the puck; during docking it
+  /// marks the landing position. Item dots exist only while items are mounted.
+  final bool showAnchors;
+
+  /// Connect each level's moving items with a circular curve, clipped around
+  /// the pucks. Curves follow the springs and fade near the root.
+  final bool showLevelCurves;
+
+  /// Replace items and their springs with radius guides, item-width bands,
+  /// and filled sectors for the solved arc, using the normal layout rules.
+  final bool layoutPreview;
+}
+
 class _PuckMenuState extends State<PuckMenu>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final Ticker _ticker = createTicker(_tick);
   final _cables = PuckCables();
-  final _curves = PuckTierCurves();
+  final _curves = PuckLevelCurves();
   Size? _size;
   bool _geometryChanged = false;
   double _globalTop = 0;
@@ -217,10 +313,10 @@ class _PuckMenuState extends State<PuckMenu>
   int _completedGeneration = 0;
   Stopwatch? _menuMotionClock;
 
-  List<List<Widget>> get _tiers => widget._multiLevelItems == null
+  List<List<Widget>> get _levels => widget._multiLevelItems == null
       ? widget.puckItems
-      : widget.puckItems.where((tier) => tier.isNotEmpty).toList();
-  List<Widget> get _items => _tiers.expand((tier) => tier).toList();
+      : widget.puckItems.where((level) => level.isNotEmpty).toList();
+  List<Widget> get _items => _levels.expand((level) => level).toList();
 
   double get _left => -widget.layout.diameter * widget.layout.offscreenFraction;
   double get _right =>
@@ -460,12 +556,12 @@ class _PuckMenuState extends State<PuckMenu>
     return best;
   }
 
-  List<Offset> _tierTargets(
+  List<Offset> _levelTargets(
     double itemDiameter,
     int count,
     double radius, {
     (double, double)? sharedArc,
-    int tier = 0,
+    int level = 0,
   }) {
     final center =
         _menuPosition +
@@ -504,14 +600,14 @@ class _PuckMenuState extends State<PuckMenu>
       // phases let items keep their positions as the arc crosses its seam.
       spacing = ringSpacing;
       final lastFirst = math.max(start, end - (count - 1) * spacing);
-      final previous = _tierPhases[tier] ?? (start + lastFirst) / 2;
+      final previous = _levelPhases[level] ?? (start + lastFirst) / 2;
       final shift =
           ((previous - (start + lastFirst) / 2) / spacing).round() * spacing;
       first = previous.clamp(start + shift, lastFirst + shift);
     } else if (count == 1 && end - start >= 2 * math.pi - 1e-8) {
-      first = _tierPhases[tier] ?? first;
+      first = _levelPhases[level] ?? first;
     }
-    _tierPhases[tier] = first;
+    _levelPhases[level] = first;
     final points = List.generate(count, (index) {
       final angle = first + spacing * index;
       final point = center + Offset(math.cos(angle), math.sin(angle)) * radius;
@@ -527,15 +623,15 @@ class _PuckMenuState extends State<PuckMenu>
     // A full ring has no facing side, so retain its direction across the seam.
     final fullRing = end - start >= 2 * math.pi - 1e-8;
     final reversed = fullRing
-        ? (_tierReversed[tier] ?? widget.layout.initialEdge == PuckEdge.right)
+        ? (_levelReversed[level] ?? widget.layout.initialEdge == PuckEdge.right)
         : math.cos((start + end) / 2) < 0;
-    _tierReversed[tier] = reversed;
+    _levelReversed[level] = reversed;
     return reversed ? points.reversed.toList() : points;
   }
 
   List<double> _menuRadii(double diameter) {
-    final tiers = _tiers;
-    if (tiers.length <= 1) {
+    final levels = _levels;
+    if (levels.length <= 1) {
       return [widget.layout.levelRadius];
     }
     final center =
@@ -548,16 +644,16 @@ class _PuckMenuState extends State<PuckMenu>
       final arc = _menuArc(center, diameter / 2, 0, radius);
       if (arc == null) continue;
       final spacing = 2 * math.asin(math.min(1, diameter / (2 * radius)));
-      if (arc.$2 - arc.$1 >= (tiers.last.length - 1) * spacing) {
+      if (arc.$2 - arc.$1 >= (levels.last.length - 1) * spacing) {
         outer = radius;
       }
     }
-    final near = math.min(widget.layout.levelRadius, outer / tiers.length);
+    final near = math.min(widget.layout.levelRadius, outer / levels.length);
     // Increase each outward step beyond the preferred inner radius. Scale
     // all gaps together when the viewport requires compression.
     final gaps = [
-      for (var tier = 1; tier < tiers.length; tier++)
-        math.max(widget.layout.levelRadius, diameter) + 8 * tier,
+      for (var level = 1; level < levels.length; level++)
+        math.max(widget.layout.levelRadius, diameter) + 8 * level,
     ];
     final span = gaps.fold(0.0, (sum, gap) => sum + gap);
     final scale = math.min(1.0, (outer - near) / span);
@@ -808,8 +904,8 @@ class _PuckMenuState extends State<PuckMenu>
 
   Object? _menuLayoutKey;
   List<double>? _restingRadii;
-  final Map<int, double> _tierPhases = {};
-  final Map<int, bool> _tierReversed = {};
+  final Map<int, double> _levelPhases = {};
+  final Map<int, bool> _levelReversed = {};
 
   (List<double>, (double, double)?) _menuLayout(double diameter) {
     final base = _baseMenuLayout(diameter);
@@ -829,25 +925,25 @@ class _PuckMenuState extends State<PuckMenu>
     if (range <= 1e-8) return base;
     final scale = (base.$1.last - near) / range;
     final middle = (arc.$1 + arc.$2) / 2;
-    final tiers = _tiers;
+    final levels = _levels;
 
     // Compare actual chord clearances, including the radial clearance between
-    // tiers. Saturate at a comfortable gap so excess space can instead restore
+    // levels. Saturate at a comfortable gap so excess space can instead restore
     // resting radii. Smooth weights avoid switching between discrete winners.
     double clearance(List<double> radii, double width) {
       var gap = double.infinity;
       int? previous;
-      for (var tier = 0; tier < tiers.length; tier++) {
-        final count = tiers[tier].length;
+      for (var level = 0; level < levels.length; level++) {
+        final count = levels[level].length;
         if (count == 0) continue;
         if (count > 1) {
           final step = math.min(width / (count - 1), 2 * math.pi / count);
-          gap = math.min(gap, 2 * radii[tier] * math.sin(step / 2) - diameter);
+          gap = math.min(gap, 2 * radii[level] * math.sin(step / 2) - diameter);
         }
         if (previous != null) {
-          gap = math.min(gap, radii[tier] - radii[previous] - diameter);
+          gap = math.min(gap, radii[level] - radii[previous] - diameter);
         }
-        previous = tier;
+        previous = level;
       }
       return gap;
     }
@@ -979,8 +1075,8 @@ class _PuckMenuState extends State<PuckMenu>
   (List<double>, (double, double)?) _solveMenuLayout(double diameter) {
     if (!_expanded) {
       _menuLayoutKey = null;
-      _tierPhases.clear();
-      _tierReversed.clear();
+      _levelPhases.clear();
+      _levelReversed.clear();
       return (const [], null);
     }
     final key = (
@@ -988,7 +1084,7 @@ class _PuckMenuState extends State<PuckMenu>
       diameter,
       widget.layout.diameter,
       widget.layout.levelRadius,
-      _tiers.map((tier) => tier.length).join(','),
+      _levels.map((level) => level.length).join(','),
     );
     if (_menuLayoutKey != key) {
       _menuLayoutKey = key;
@@ -1065,27 +1161,27 @@ class _PuckMenuState extends State<PuckMenu>
     List<double> radii,
     (double, double)? arc,
   ) {
-    final tiers = _tiers;
+    final levels = _levels;
     return [
-      for (var tier = 0; tier < tiers.length; tier++)
-        ..._tierTargets(
+      for (var level = 0; level < levels.length; level++)
+        ..._levelTargets(
           diameter,
-          tiers[tier].length,
-          radii[tier],
+          levels[level].length,
+          radii[level],
           sharedArc: arc,
-          tier: tier,
+          level: level,
         ),
     ];
   }
 
-  Duration _tierDelay(int index) {
-    final tiers = _tiers;
-    var tier = 0;
-    while (tier < tiers.length - 1 && index >= tiers[tier].length) {
-      index -= tiers[tier++].length;
+  Duration _levelDelay(int index) {
+    final levels = _levels;
+    var level = 0;
+    while (level < levels.length - 1 && index >= levels[level].length) {
+      index -= levels[level++].length;
     }
     return Duration(
-      milliseconds: 50 * (_expanded ? tiers.length - 1 - tier : tier),
+      milliseconds: 50 * (_expanded ? levels.length - 1 - level : level),
     );
   }
 
@@ -1106,7 +1202,7 @@ class _PuckMenuState extends State<PuckMenu>
       _pendingCollapse.retainAll(identities);
       _pendingExpansion.retainAll(identities);
       if (_opening) {
-        final oldItems = oldWidget.puckItems.expand((tier) => tier).toList();
+        final oldItems = oldWidget.puckItems.expand((level) => level).toList();
         final oldIdentities = {
           for (var i = 0; i < oldItems.length; i++) oldItems[i].key ?? i,
         };
@@ -1224,8 +1320,8 @@ class _PuckMenuState extends State<PuckMenu>
             _bottom * restored.verticalAlignment,
           );
           _menuLayoutKey = null;
-          _tierPhases.clear();
-          _tierReversed.clear();
+          _levelPhases.clear();
+          _levelReversed.clear();
         }
         _position = _constrainVertical(_position);
         if (restore) _dock(Offset.zero);
@@ -1241,10 +1337,10 @@ class _PuckMenuState extends State<PuckMenu>
             );
         final items = _items;
         final generation = _menuGeneration;
-        final tiers = _tiers;
-        final itemTiers = [
-          for (var tier = 0; tier < tiers.length; tier++)
-            for (var item = 0; item < tiers[tier].length; item++) tier,
+        final levels = _levels;
+        final itemLevels = [
+          for (var level = 0; level < levels.length; level++)
+            for (var item = 0; item < levels[level].length; item++) level,
         ];
         PuckOpeningTrace.instant('overlay.layout.begin');
         final (radii, arc) = PuckOpeningTrace.measure(
@@ -1271,12 +1367,12 @@ class _PuckMenuState extends State<PuckMenu>
                 SpringPuck(
                   key: ValueKey(items[i].key ?? i),
                   origin: origin,
-                  delay: _tierDelay(i),
+                  delay: _levelDelay(i),
                   motionClock: _menuMotionClock,
                   cables: _cables,
                   showRopes: widget.showRopes,
                   curves: widget.debug.showLevelCurves ? _curves : null,
-                  tier: itemTiers[i],
+                  level: itemLevels[i],
                   order: i,
                   target: _expanded ? targets[i] : origin,
                   diameter: itemDiameter,
@@ -1322,13 +1418,16 @@ class _PuckMenuState extends State<PuckMenu>
                 child: IgnorePointer(
                   child: RepaintBoundary(
                     child: CustomPaint(
-                      painter: PuckTierCurvePainter(
+                      painter: PuckLevelCurvePainter(
                         _curves,
                         parentBounds:
                             _position & Size.square(widget.layout.diameter),
-                        color: Theme.brightnessOf(context) == Brightness.dark
-                            ? const Color(0xFF424242)
-                            : const Color(0xFFD1D5DB),
+                        color:
+                            widget.arcStyle.color ??
+                            (Theme.brightnessOf(context) == Brightness.dark
+                                ? const Color(0xFF424242)
+                                : const Color(0xFFD1D5DB)),
+                        thickness: widget.arcStyle.thickness,
                       ),
                     ),
                   ),

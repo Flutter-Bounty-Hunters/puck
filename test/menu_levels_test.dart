@@ -58,8 +58,8 @@ void main() {
             await gesture.moveBy(Offset(0, y - layout().center.dy));
             await tester.pump();
             final rotated = layout();
-            for (var tier = 0; tier < radii.length; tier++) {
-              expect(rotated.radii[tier], closeTo(radii[tier], .001));
+            for (var level = 0; level < radii.length; level++) {
+              expect(rotated.radii[level], closeTo(radii[level], .001));
             }
             expect(
               rotated.arc!.$2 - rotated.arc!.$1,
@@ -195,7 +195,7 @@ void main() {
             previousSpan = span;
           }
           // Even a captured drag far outside the viewport must not shrink the
-          // other tiers to compensate for an invisible fixed inner circle.
+          // other levels to compensate for an invisible fixed inner circle.
           await gesture.moveBy(Offset(-70 * inward, 0));
           await tester.pump(const Duration(milliseconds: 16));
           expect(layout().radii, initial.radii);
@@ -278,8 +278,8 @@ void main() {
     await tester.pump();
     await gesture.moveBy(const Offset(-.1, 0));
     await tester.pump();
-    for (var tier = 0; tier < compressed.radii.length; tier++) {
-      expect(layout().radii[tier], closeTo(compressed.radii[tier], .0001));
+    for (var level = 0; level < compressed.radii.length; level++) {
+      expect(layout().radii[level], closeTo(compressed.radii[level], .0001));
     }
     await gesture.moveBy(Offset(initial.center.dx - layout().center.dx, 0));
     await tester.pump();
@@ -289,7 +289,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('obstacles rotate end caps before compressing tiers', (
+  testWidgets('obstacles rotate end caps before compressing levels', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(800, 1000));
@@ -458,7 +458,7 @@ void main() {
   );
 
   for (final edge in PuckEdge.values) {
-    testWidgets('docking at $edge restores stable resting tier distances', (
+    testWidgets('docking at $edge restores stable resting level distances', (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -516,7 +516,7 @@ void main() {
 
   for (final edge in PuckEdge.values) {
     for (final alignment in [0.0, 0.1, 0.4, 0.5, 0.6, 0.9, 1.0]) {
-      testWidgets('tiers share end caps at $edge/$alignment', (tester) async {
+      testWidgets('levels share end caps at $edge/$alignment', (tester) async {
         // Leave enough vertical room for the expanded spacing to have a
         // horizontal region between the top and bottom barriers.
         await tester.binding.setSurfaceSize(const Size(800, 1000));
@@ -548,10 +548,10 @@ void main() {
             .map((widget) => widget.painter)
             .whereType<PuckAnchorPainter>()
             .single;
-        for (var tier = 1; tier < painter.radii.length; tier++) {
+        for (var level = 1; level < painter.radii.length; level++) {
           expect(
-            painter.radii[tier] - painter.radii[tier - 1],
-            lessThanOrEqualTo(112 + 8 * tier + 0.001),
+            painter.radii[level] - painter.radii[level - 1],
+            lessThanOrEqualTo(112 + 8 * level + 0.001),
           );
         }
         expect(
@@ -566,14 +566,14 @@ void main() {
           expect(math.cos(arc.$2).abs(), lessThan(0.1));
         }
         var offset = 1;
-        var tier = 0;
+        var level = 0;
         for (final count in [3, 4, 5]) {
           final points = painter.anchors.sublist(offset, offset + count);
           for (var i = 0; i < count; i++) {
             final angle = arc.$1 + (arc.$2 - arc.$1) * i / (count - 1);
             final expected =
                 painter.center +
-                Offset(math.cos(angle), math.sin(angle)) * painter.radii[tier];
+                Offset(math.cos(angle), math.sin(angle)) * painter.radii[level];
             expect(
               points
                   .map((point) => (point - expected).distance)
@@ -584,7 +584,7 @@ void main() {
             expect(points[i].dy, inInclusiveRange(24, 976));
           }
           offset += count;
-          tier++;
+          level++;
         }
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
@@ -592,7 +592,7 @@ void main() {
     }
   }
 
-  testWidgets('arbitrary tiers tolerate empty tiers, resizing and reversal', (
+  testWidgets('arbitrary levels tolerate empty levels, resizing and reversal', (
     tester,
   ) async {
     const root = ValueKey('root');
@@ -603,8 +603,8 @@ void main() {
           rootPuck: const ColoredBox(key: root, color: Colors.blue),
           puckItems: [
             const [],
-            for (var tier = 0; tier < 5; tier++)
-              [ColoredBox(key: ValueKey(tier), color: Colors.green)],
+            for (var level = 0; level < 5; level++)
+              [ColoredBox(key: ValueKey(level), color: Colors.green)],
             const [],
           ],
         ),
@@ -641,7 +641,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tiers launch outside-in and close inside-out', (tester) async {
+  testWidgets('levels launch outside-in and close inside-out', (tester) async {
     const root = ValueKey('root');
     Key item(int i) => ValueKey(i);
     await tester.pumpWidget(

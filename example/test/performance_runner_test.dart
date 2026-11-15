@@ -75,7 +75,7 @@ void main() {
     ]);
     final command = runner.launchCommand(
       options,
-      'glass_three_tier',
+      'glass_three_level',
       'profile',
       'phone',
     );
@@ -143,14 +143,14 @@ void main() {
     ]);
     final command = runner.launchCommand(
       options,
-      'glass_three_tier',
+      'glass_three_level',
       'profile',
       'device',
     );
     expect(command, contains('lib/performance/main.dart'));
     expect(command[command.indexOf('--device-connection') + 1], 'attached');
     final route = Uri.parse(command[command.indexOf('--route') + 1]);
-    expect(route.path, '/glass_three_tier');
+    expect(route.path, '/glass_three_level');
     expect(route.queryParameters, containsPair('automated', '1'));
     expect(route.queryParameters, containsPair('repeats', '3'));
     expect(route.queryParameters, isNot(contains('prepare')));

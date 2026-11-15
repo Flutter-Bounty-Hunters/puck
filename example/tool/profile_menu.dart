@@ -8,7 +8,7 @@ import 'dart:ui' show FramePhase;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:puck/src/puck_tier_curves.dart';
+import 'package:puck/src/puck_level_curves.dart';
 import 'package:puck/puck.dart';
 
 import 'package:puck_example/main.dart' as demo;
@@ -16,7 +16,7 @@ import 'package:puck_example/main.dart' as demo;
 final results = <Map<String, Object?>>[];
 Map<String, Object?>? active;
 final frames = <FrameTiming>[];
-PuckTierCurves? curves;
+PuckLevelCurves? curves;
 RenderBox? rootBox;
 Offset rootCenter = Offset.zero;
 RenderBox? overlayBox;
@@ -24,8 +24,8 @@ Offset rootLocalCenter = Offset.zero;
 
 void inspect(Element element) {
   final widget = element.widget;
-  if (widget is CustomPaint && widget.painter is PuckTierCurvePainter) {
-    curves = (widget.painter! as PuckTierCurvePainter).curves;
+  if (widget is CustomPaint && widget.painter is PuckLevelCurvePainter) {
+    curves = (widget.painter! as PuckLevelCurvePainter).curves;
   }
   if (widget is PuckMenu) {
     overlayBox = element.findRenderObject() as RenderBox?;

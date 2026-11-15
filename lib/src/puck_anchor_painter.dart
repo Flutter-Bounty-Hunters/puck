@@ -16,7 +16,7 @@ class PuckAnchorPainter extends CustomPainter {
   final Offset center;
   final List<double> radii;
 
-  /// Shared start and end angles for the tier arcs, in radians.
+  /// Shared start and end angles for the level arcs, in radians.
   final (double, double)? arc;
 
   @override

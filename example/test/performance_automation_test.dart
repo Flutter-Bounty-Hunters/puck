@@ -4,7 +4,7 @@ import 'package:puck_example/performance/automation.dart';
 import 'package:puck_example/performance/performance_demo.dart';
 
 void main() {
-  for (final variant in ['solid_single', 'solid_three_tier']) {
+  for (final variant in ['solid_single', 'solid_three_level']) {
     testWidgets('sensors follow disposal and fresh openings: $variant', (
       tester,
     ) async {

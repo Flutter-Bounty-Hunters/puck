@@ -105,7 +105,7 @@ void main() {
   });
 
   test(
-    'comparison groups isolate setup changes but allow material and tiers',
+    'comparison groups isolate setup changes but allow material and levels',
     () {
       Map<String, dynamic> launch(String variant, {bool curves = false}) => {
         'variant': variant,
@@ -117,7 +117,7 @@ void main() {
           'display_refresh_rate_hz': 120,
           'config': {
             'curves': curves,
-            'tier_counts': variant.endsWith('single') ? [4] : [4, 7, 12],
+            'level_counts': variant.endsWith('single') ? [4] : [4, 7, 12],
           },
           'scenarios': [
             sample([(1000, 1000)]).data,
@@ -129,7 +129,7 @@ void main() {
         'device': {'name': 'Phone'},
         'cases': [
           launch('solid_single'),
-          launch('glass_three_tier'),
+          launch('glass_three_level'),
           launch('photos_single', curves: true),
           {...launch('solid_single'), 'error': 'failed'},
         ],
@@ -145,11 +145,11 @@ void main() {
             .measurementCount,
         1,
       );
-      final legacy = launch('glass_three_tier');
+      final legacy = launch('glass_three_level');
       (legacy['report']['config'] as Map)['maintain_menu_state'] = true;
-      final current = launch('glass_three_tier');
+      final current = launch('glass_three_level');
       (current['report']['config'] as Map)['closed_item_policy'] = 'dispose';
-      final independent = launch('glass_three_tier');
+      final independent = launch('glass_three_level');
       (independent['report']['config'] as Map).addAll(<String, Object>{
         'closed_item_policy': 'dispose',
         'glass_layer_policy': 'individual_pucks',

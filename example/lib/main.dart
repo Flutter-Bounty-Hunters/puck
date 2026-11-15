@@ -5,7 +5,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as glass;
 
 import 'layout_demo.dart' show MenuLayoutDemo;
 
-const _demoTiers = [
+const _demoLevels = [
   [
     (Icons.home, 'Home'),
     (Icons.search, 'Search'),
@@ -319,9 +319,9 @@ class _PuckDemoState extends State<PuckDemo> {
                 showAnchors: _showDebugAnchors,
               ),
               puckItems: [
-                for (final tier in _demoTiers)
+                for (final level in _demoLevels)
                   [
-                    for (final (icon, label) in tier)
+                    for (final (icon, label) in level)
                       LiquidGlass.withOwnLayer(
                         key: ValueKey(label),
                         settings: glassSettings,

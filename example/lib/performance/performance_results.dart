@@ -19,8 +19,8 @@ const scenarioLabels = {
   'open_release': 'Open · release to wall',
 };
 String variantLabel(String id) => id
-    .replaceAll('three_tier', '3 tiers')
-    .replaceAll('single', '1 tier')
+    .replaceAll('three_level', '3 levels')
+    .replaceAll('single', '1 level')
     .replaceAll('_', ' · ')
     .replaceFirstMapped(RegExp(r'^.'), (match) => match[0]!.toUpperCase());
 
@@ -78,7 +78,7 @@ class PerformanceRun {
         ),
       );
 
-  /// Group only successful launches. Material and tier counts are intentional
+  /// Group only successful launches. Material and level counts are intentional
   /// experiment variables; viewport, renderer, input policy and mode are not.
   Map<String, List<PerformanceLaunch>> get setupGroups {
     final groups = <String, List<PerformanceLaunch>>{};
@@ -96,9 +96,11 @@ class PerformanceRun {
               report['native_shader_filters_supported'],
           'interaction_readiness':
               report['interaction_readiness'] ?? 'legacy_unchecked',
-          // Older fixtures shared a layer per tier. Do not pool their frame
+          // Older fixtures shared a layer per level. Do not pool their frame
           // timings with current independent-puck rendering measurements.
-          'glass_layer_policy': config['glass_layer_policy'] ?? 'per_tier',
+          'glass_layer_policy':
+              (config['glass_layer_policy'] as String? ?? 'per_level')
+                  .replaceAll('per_tier', 'per_level'),
           'prepare_glass':
               config['prepare_glass'] ??
               (data['parameters']?['no_prepare'] is bool
@@ -185,7 +187,11 @@ Object? _canonicalJson(Object? value) {
 class PerformanceLaunch {
   PerformanceLaunch(this.data);
   final Map<String, dynamic> data;
-  String get variant => data['variant'] as String? ?? 'unknown';
+  // Normalize names from reports saved before the level terminology rename.
+  String get variant => (data['variant'] as String? ?? 'unknown').replaceAll(
+    'three_tier',
+    'three_level',
+  );
   int get launch => (data['launch'] as num?)?.toInt() ?? 1;
   bool get success =>
       !data.containsKey('error') && data['report']?['success'] == true;

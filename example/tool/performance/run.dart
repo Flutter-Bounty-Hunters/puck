@@ -10,11 +10,11 @@ typedef Json = Map<String, dynamic>;
 
 const variants = [
   'solid_single',
-  'solid_three_tier',
+  'solid_three_level',
   'photos_single',
-  'photos_three_tier',
+  'photos_three_level',
   'glass_single',
-  'glass_three_tier',
+  'glass_three_level',
 ];
 const scenarios = [
   'first_open',
@@ -45,7 +45,7 @@ Options:
   --timeout <seconds>     Per-launch timeout including build (default: 300)
   --output <file>         New self-contained JSON file
   --binary <path>         Prebuilt app from lib/performance/main.dart
-  --curves               Include tier curves in every variant
+  --curves               Include level curves in every variant
   --trace                Save incremental VM traces (adds overhead)
   --profile-opening      Capture opening timeline and CPU call stacks
   --dry-run              Print launch commands without launching

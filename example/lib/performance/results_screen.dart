@@ -18,11 +18,11 @@ const _blue = Color(0xFF8DAEF2);
 const _red = Color(0xFFFF7187);
 const _variants = [
   'solid_single',
-  'solid_three_tier',
+  'solid_three_level',
   'photos_single',
-  'photos_three_tier',
+  'photos_three_level',
   'glass_single',
-  'glass_three_tier',
+  'glass_three_level',
 ];
 
 class PerformanceResultsScreen extends StatefulWidget {
@@ -459,7 +459,7 @@ class _ProfileCard extends StatelessWidget {
                     ? 'Glass'
                     : profile.id.startsWith('photos')
                     ? 'Photos'
-                    : 'Solid color'} / ${profile.id.endsWith('three_tier') ? '3 tiers' : '1 tier'}',
+                    : 'Solid color'} / ${profile.id.endsWith('three_level') ? '3 levels' : '1 level'}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
