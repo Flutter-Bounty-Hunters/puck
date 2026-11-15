@@ -1,0 +1,2930 @@
+{
+  "environment": "iPhone 17 simulator, iOS 26.5, Flutter debug, Impeller Metal; profile mode unsupported",
+  "instrumentation": "Real PointerDown/PointerUp events through GestureBinding; observations at end of rendered framework frame; local coordinates account for SafeArea. Emergence is geometry beyond root occlusion, not scanout measurement.",
+  "trials": [
+    {
+      "trial": 1,
+      "mounted_ms": 90.218,
+      "moving_ms": 117.803,
+      "emerged_ms": 147.932,
+      "max_ui_frame_ms": 68.547,
+      "max_raster_frame_ms": 19.119
+    },
+    {
+      "trial": 2,
+      "mounted_ms": 71.369,
+      "moving_ms": 120.616,
+      "emerged_ms": 120.616,
+      "max_ui_frame_ms": 58.623,
+      "max_raster_frame_ms": 3.53
+    },
+    {
+      "trial": 3,
+      "mounted_ms": 74.153,
+      "moving_ms": 110.185,
+      "emerged_ms": 126.186,
+      "max_ui_frame_ms": 58.757,
+      "max_raster_frame_ms": 20.547
+    },
+    {
+      "trial": 4,
+      "mounted_ms": 69.756,
+      "moving_ms": 110.71,
+      "emerged_ms": 110.71,
+      "max_ui_frame_ms": 57.678,
+      "max_raster_frame_ms": 3.573
+    },
+    {
+      "trial": 5,
+      "mounted_ms": 73.538,
+      "moving_ms": 116.713,
+      "emerged_ms": 116.713,
+      "max_ui_frame_ms": 56.23,
+      "max_raster_frame_ms": 3.557
+    },
+    {
+      "trial": 6,
+      "mounted_ms": 67.728,
+      "moving_ms": 116.264,
+      "emerged_ms": 116.264,
+      "max_ui_frame_ms": 51.55,
+      "max_raster_frame_ms": 21.559
+    }
+  ],
+  "raw_frames": [
+    {
+      "trial": 1,
+      "tapUpUs": 6033326849388,
+      "mountedUs": 90218,
+      "movingUs": 117803,
+      "visibleUs": 147932,
+      "frames": [
+        {
+          "vsyncUs": 6033326857311,
+          "buildUs": 68547,
+          "rasterUs": 14054,
+          "totalUs": 83156
+        },
+        {
+          "vsyncUs": 6033326940407,
+          "buildUs": 3933,
+          "rasterUs": 3919,
+          "totalUs": 8897
+        },
+        {
+          "vsyncUs": 6033326957312,
+          "buildUs": 5774,
+          "rasterUs": 19119,
+          "totalUs": 26801
+        },
+        {
+          "vsyncUs": 6033326973978,
+          "buildUs": 3753,
+          "rasterUs": 2553,
+          "totalUs": 24028
+        },
+        {
+          "vsyncUs": 6033326990645,
+          "buildUs": 5103,
+          "rasterUs": 3783,
+          "totalUs": 26616
+        },
+        {
+          "vsyncUs": 6033327007312,
+          "buildUs": 8319,
+          "rasterUs": 3137,
+          "totalUs": 29160
+        },
+        {
+          "vsyncUs": 6033327023978,
+          "buildUs": 3019,
+          "rasterUs": 1672,
+          "totalUs": 22285
+        },
+        {
+          "vsyncUs": 6033327040645,
+          "buildUs": 3789,
+          "rasterUs": 1630,
+          "totalUs": 23047
+        },
+        {
+          "vsyncUs": 6033327057312,
+          "buildUs": 4697,
+          "rasterUs": 2088,
+          "totalUs": 24259
+        },
+        {
+          "vsyncUs": 6033327073978,
+          "buildUs": 2541,
+          "rasterUs": 1637,
+          "totalUs": 21604
+        },
+        {
+          "vsyncUs": 6033327090645,
+          "buildUs": 4004,
+          "rasterUs": 2039,
+          "totalUs": 23451
+        },
+        {
+          "vsyncUs": 6033327107311,
+          "buildUs": 2496,
+          "rasterUs": 1756,
+          "totalUs": 21668
+        },
+        {
+          "vsyncUs": 6033327123978,
+          "buildUs": 2714,
+          "rasterUs": 1861,
+          "totalUs": 22082
+        },
+        {
+          "vsyncUs": 6033327140645,
+          "buildUs": 2336,
+          "rasterUs": 1831,
+          "totalUs": 21551
+        },
+        {
+          "vsyncUs": 6033327157311,
+          "buildUs": 2327,
+          "rasterUs": 2948,
+          "totalUs": 22702
+        },
+        {
+          "vsyncUs": 6033327173978,
+          "buildUs": 2399,
+          "rasterUs": 1788,
+          "totalUs": 21586
+        },
+        {
+          "vsyncUs": 6033327190645,
+          "buildUs": 2436,
+          "rasterUs": 1604,
+          "totalUs": 21518
+        },
+        {
+          "vsyncUs": 6033327207312,
+          "buildUs": 2388,
+          "rasterUs": 1868,
+          "totalUs": 21823
+        },
+        {
+          "vsyncUs": 6033327223978,
+          "buildUs": 2376,
+          "rasterUs": 1419,
+          "totalUs": 21288
+        },
+        {
+          "vsyncUs": 6033327240645,
+          "buildUs": 2340,
+          "rasterUs": 1740,
+          "totalUs": 21580
+        },
+        {
+          "vsyncUs": 6033327257311,
+          "buildUs": 2571,
+          "rasterUs": 1582,
+          "totalUs": 21626
+        },
+        {
+          "vsyncUs": 6033327273978,
+          "buildUs": 2568,
+          "rasterUs": 1577,
+          "totalUs": 21700
+        },
+        {
+          "vsyncUs": 6033327290645,
+          "buildUs": 2690,
+          "rasterUs": 1686,
+          "totalUs": 21880
+        },
+        {
+          "vsyncUs": 6033327307311,
+          "buildUs": 2644,
+          "rasterUs": 2039,
+          "totalUs": 22211
+        },
+        {
+          "vsyncUs": 6033327323978,
+          "buildUs": 2545,
+          "rasterUs": 2143,
+          "totalUs": 22149
+        },
+        {
+          "vsyncUs": 6033327340645,
+          "buildUs": 2817,
+          "rasterUs": 2048,
+          "totalUs": 22410
+        },
+        {
+          "vsyncUs": 6033327357312,
+          "buildUs": 2752,
+          "rasterUs": 2133,
+          "totalUs": 22716
+        },
+        {
+          "vsyncUs": 6033327373978,
+          "buildUs": 2454,
+          "rasterUs": 1714,
+          "totalUs": 21805
+        },
+        {
+          "vsyncUs": 6033327390645,
+          "buildUs": 2295,
+          "rasterUs": 1980,
+          "totalUs": 22064
+        },
+        {
+          "vsyncUs": 6033327407311,
+          "buildUs": 2468,
+          "rasterUs": 2109,
+          "totalUs": 22435
+        },
+        {
+          "vsyncUs": 6033327423978,
+          "buildUs": 2528,
+          "rasterUs": 2014,
+          "totalUs": 22307
+        },
+        {
+          "vsyncUs": 6033327440645,
+          "buildUs": 2778,
+          "rasterUs": 2267,
+          "totalUs": 22799
+        },
+        {
+          "vsyncUs": 6033327457311,
+          "buildUs": 2603,
+          "rasterUs": 1992,
+          "totalUs": 22268
+        },
+        {
+          "vsyncUs": 6033327473978,
+          "buildUs": 2639,
+          "rasterUs": 1974,
+          "totalUs": 22362
+        },
+        {
+          "vsyncUs": 6033327490645,
+          "buildUs": 3203,
+          "rasterUs": 2165,
+          "totalUs": 23110
+        },
+        {
+          "vsyncUs": 6033327507311,
+          "buildUs": 2380,
+          "rasterUs": 2101,
+          "totalUs": 22159
+        },
+        {
+          "vsyncUs": 6033327523978,
+          "buildUs": 2423,
+          "rasterUs": 1996,
+          "totalUs": 22251
+        },
+        {
+          "vsyncUs": 6033327540645,
+          "buildUs": 2592,
+          "rasterUs": 2255,
+          "totalUs": 22620
+        },
+        {
+          "vsyncUs": 6033327557311,
+          "buildUs": 2565,
+          "rasterUs": 2224,
+          "totalUs": 22652
+        },
+        {
+          "vsyncUs": 6033327573978,
+          "buildUs": 2587,
+          "rasterUs": 2129,
+          "totalUs": 22426
+        },
+        {
+          "vsyncUs": 6033327590645,
+          "buildUs": 2398,
+          "rasterUs": 2533,
+          "totalUs": 22876
+        },
+        {
+          "vsyncUs": 6033327607311,
+          "buildUs": 2540,
+          "rasterUs": 1893,
+          "totalUs": 22123
+        },
+        {
+          "vsyncUs": 6033327623978,
+          "buildUs": 2560,
+          "rasterUs": 1970,
+          "totalUs": 22329
+        },
+        {
+          "vsyncUs": 6033327640645,
+          "buildUs": 2510,
+          "rasterUs": 2126,
+          "totalUs": 22424
+        },
+        {
+          "vsyncUs": 6033327657311,
+          "buildUs": 2342,
+          "rasterUs": 2161,
+          "totalUs": 22311
+        },
+        {
+          "vsyncUs": 6033327673978,
+          "buildUs": 2796,
+          "rasterUs": 2398,
+          "totalUs": 23147
+        },
+        {
+          "vsyncUs": 6033327690645,
+          "buildUs": 2353,
+          "rasterUs": 2190,
+          "totalUs": 22397
+        },
+        {
+          "vsyncUs": 6033327707311,
+          "buildUs": 2469,
+          "rasterUs": 2445,
+          "totalUs": 22698
+        },
+        {
+          "vsyncUs": 6033327723978,
+          "buildUs": 2521,
+          "rasterUs": 2115,
+          "totalUs": 22467
+        },
+        {
+          "vsyncUs": 6033327740645,
+          "buildUs": 2251,
+          "rasterUs": 1979,
+          "totalUs": 21968
+        },
+        {
+          "vsyncUs": 6033327757311,
+          "buildUs": 2648,
+          "rasterUs": 2236,
+          "totalUs": 22835
+        },
+        {
+          "vsyncUs": 6033327773978,
+          "buildUs": 2702,
+          "rasterUs": 2310,
+          "totalUs": 22786
+        },
+        {
+          "vsyncUs": 6033327790645,
+          "buildUs": 2705,
+          "rasterUs": 2298,
+          "totalUs": 22880
+        },
+        {
+          "vsyncUs": 6033327807311,
+          "buildUs": 2551,
+          "rasterUs": 2289,
+          "totalUs": 22742
+        },
+        {
+          "vsyncUs": 6033327823978,
+          "buildUs": 2363,
+          "rasterUs": 1938,
+          "totalUs": 22121
+        },
+        {
+          "vsyncUs": 6033327840645,
+          "buildUs": 2838,
+          "rasterUs": 3561,
+          "totalUs": 24326
+        },
+        {
+          "vsyncUs": 6033327857311,
+          "buildUs": 3024,
+          "rasterUs": 2214,
+          "totalUs": 22471
+        },
+        {
+          "vsyncUs": 6033327873978,
+          "buildUs": 3167,
+          "rasterUs": 2698,
+          "totalUs": 23412
+        },
+        {
+          "vsyncUs": 6033327890645,
+          "buildUs": 3193,
+          "rasterUs": 2346,
+          "totalUs": 23140
+        },
+        {
+          "vsyncUs": 6033327907311,
+          "buildUs": 2511,
+          "rasterUs": 2336,
+          "totalUs": 22359
+        },
+        {
+          "vsyncUs": 6033327923978,
+          "buildUs": 2597,
+          "rasterUs": 2194,
+          "totalUs": 22267
+        },
+        {
+          "vsyncUs": 6033327940645,
+          "buildUs": 2661,
+          "rasterUs": 2150,
+          "totalUs": 22412
+        },
+        {
+          "vsyncUs": 6033327957311,
+          "buildUs": 2573,
+          "rasterUs": 2333,
+          "totalUs": 22456
+        },
+        {
+          "vsyncUs": 6033327973978,
+          "buildUs": 2528,
+          "rasterUs": 2116,
+          "totalUs": 22142
+        },
+        {
+          "vsyncUs": 6033327990645,
+          "buildUs": 2551,
+          "rasterUs": 2924,
+          "totalUs": 23281
+        },
+        {
+          "vsyncUs": 6033328007311,
+          "buildUs": 2646,
+          "rasterUs": 2676,
+          "totalUs": 23044
+        },
+        {
+          "vsyncUs": 6033328023978,
+          "buildUs": 2553,
+          "rasterUs": 2803,
+          "totalUs": 23127
+        },
+        {
+          "vsyncUs": 6033328040645,
+          "buildUs": 2224,
+          "rasterUs": 2148,
+          "totalUs": 22140
+        },
+        {
+          "vsyncUs": 6033328057311,
+          "buildUs": 2604,
+          "rasterUs": 2530,
+          "totalUs": 23063
+        },
+        {
+          "vsyncUs": 6033328073978,
+          "buildUs": 2523,
+          "rasterUs": 2280,
+          "totalUs": 22474
+        },
+        {
+          "vsyncUs": 6033328090645,
+          "buildUs": 2389,
+          "rasterUs": 2521,
+          "totalUs": 22625
+        },
+        {
+          "vsyncUs": 6033328107311,
+          "buildUs": 2473,
+          "rasterUs": 2343,
+          "totalUs": 22512
+        },
+        {
+          "vsyncUs": 6033328123978,
+          "buildUs": 2121,
+          "rasterUs": 2351,
+          "totalUs": 22246
+        },
+        {
+          "vsyncUs": 6033328140645,
+          "buildUs": 2443,
+          "rasterUs": 2174,
+          "totalUs": 22345
+        },
+        {
+          "vsyncUs": 6033328157311,
+          "buildUs": 2919,
+          "rasterUs": 3085,
+          "totalUs": 23701
+        },
+        {
+          "vsyncUs": 6033328173978,
+          "buildUs": 2624,
+          "rasterUs": 2561,
+          "totalUs": 22918
+        },
+        {
+          "vsyncUs": 6033328190645,
+          "buildUs": 3592,
+          "rasterUs": 2304,
+          "totalUs": 23668
+        },
+        {
+          "vsyncUs": 6033328207311,
+          "buildUs": 2614,
+          "rasterUs": 2189,
+          "totalUs": 22472
+        },
+        {
+          "vsyncUs": 6033328223978,
+          "buildUs": 2790,
+          "rasterUs": 2324,
+          "totalUs": 22753
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "tapUpUs": 6033331956839,
+      "mountedUs": 71369,
+      "movingUs": 120616,
+      "visibleUs": 120616,
+      "frames": [
+        {
+          "vsyncUs": 6033331940645,
+          "buildUs": 58623,
+          "rasterUs": 2942,
+          "totalUs": 80566
+        },
+        {
+          "vsyncUs": 6033332030253,
+          "buildUs": 1288,
+          "rasterUs": 1565,
+          "totalUs": 14175
+        },
+        {
+          "vsyncUs": 6033332057311,
+          "buildUs": 1987,
+          "rasterUs": 1670,
+          "totalUs": 20871
+        },
+        {
+          "vsyncUs": 6033332073978,
+          "buildUs": 1862,
+          "rasterUs": 1655,
+          "totalUs": 21309
+        },
+        {
+          "vsyncUs": 6033332090645,
+          "buildUs": 1633,
+          "rasterUs": 1807,
+          "totalUs": 21250
+        },
+        {
+          "vsyncUs": 6033332107311,
+          "buildUs": 1756,
+          "rasterUs": 2118,
+          "totalUs": 21650
+        },
+        {
+          "vsyncUs": 6033332123978,
+          "buildUs": 1788,
+          "rasterUs": 2259,
+          "totalUs": 21873
+        },
+        {
+          "vsyncUs": 6033332140645,
+          "buildUs": 2026,
+          "rasterUs": 2479,
+          "totalUs": 22333
+        },
+        {
+          "vsyncUs": 6033332157311,
+          "buildUs": 2725,
+          "rasterUs": 2822,
+          "totalUs": 23382
+        },
+        {
+          "vsyncUs": 6033332173978,
+          "buildUs": 2023,
+          "rasterUs": 2387,
+          "totalUs": 22211
+        },
+        {
+          "vsyncUs": 6033332190645,
+          "buildUs": 2082,
+          "rasterUs": 2505,
+          "totalUs": 22370
+        },
+        {
+          "vsyncUs": 6033332207311,
+          "buildUs": 5032,
+          "rasterUs": 2170,
+          "totalUs": 24994
+        },
+        {
+          "vsyncUs": 6033332223978,
+          "buildUs": 2453,
+          "rasterUs": 2604,
+          "totalUs": 22677
+        },
+        {
+          "vsyncUs": 6033332240645,
+          "buildUs": 2784,
+          "rasterUs": 2483,
+          "totalUs": 22869
+        },
+        {
+          "vsyncUs": 6033332257311,
+          "buildUs": 3358,
+          "rasterUs": 3442,
+          "totalUs": 24457
+        },
+        {
+          "vsyncUs": 6033332273979,
+          "buildUs": 3419,
+          "rasterUs": 2661,
+          "totalUs": 23879
+        },
+        {
+          "vsyncUs": 6033332290645,
+          "buildUs": 2704,
+          "rasterUs": 1851,
+          "totalUs": 22333
+        },
+        {
+          "vsyncUs": 6033332307311,
+          "buildUs": 2404,
+          "rasterUs": 1949,
+          "totalUs": 21920
+        },
+        {
+          "vsyncUs": 6033332323978,
+          "buildUs": 2115,
+          "rasterUs": 2371,
+          "totalUs": 22010
+        },
+        {
+          "vsyncUs": 6033332340645,
+          "buildUs": 2575,
+          "rasterUs": 2159,
+          "totalUs": 22385
+        },
+        {
+          "vsyncUs": 6033332357311,
+          "buildUs": 2153,
+          "rasterUs": 2009,
+          "totalUs": 21701
+        },
+        {
+          "vsyncUs": 6033332373978,
+          "buildUs": 2221,
+          "rasterUs": 1820,
+          "totalUs": 21582
+        },
+        {
+          "vsyncUs": 6033332390645,
+          "buildUs": 2318,
+          "rasterUs": 2119,
+          "totalUs": 21990
+        },
+        {
+          "vsyncUs": 6033332407311,
+          "buildUs": 2340,
+          "rasterUs": 2559,
+          "totalUs": 22706
+        },
+        {
+          "vsyncUs": 6033332423978,
+          "buildUs": 2364,
+          "rasterUs": 1902,
+          "totalUs": 21831
+        },
+        {
+          "vsyncUs": 6033332440645,
+          "buildUs": 2423,
+          "rasterUs": 2021,
+          "totalUs": 21965
+        },
+        {
+          "vsyncUs": 6033332457312,
+          "buildUs": 2387,
+          "rasterUs": 2423,
+          "totalUs": 22626
+        },
+        {
+          "vsyncUs": 6033332473978,
+          "buildUs": 2399,
+          "rasterUs": 2086,
+          "totalUs": 22319
+        },
+        {
+          "vsyncUs": 6033332490645,
+          "buildUs": 1980,
+          "rasterUs": 1931,
+          "totalUs": 21709
+        },
+        {
+          "vsyncUs": 6033332507311,
+          "buildUs": 1822,
+          "rasterUs": 2046,
+          "totalUs": 21654
+        },
+        {
+          "vsyncUs": 6033332523978,
+          "buildUs": 1931,
+          "rasterUs": 1853,
+          "totalUs": 21605
+        },
+        {
+          "vsyncUs": 6033332540645,
+          "buildUs": 1817,
+          "rasterUs": 1929,
+          "totalUs": 21551
+        },
+        {
+          "vsyncUs": 6033332557311,
+          "buildUs": 1749,
+          "rasterUs": 1852,
+          "totalUs": 21484
+        },
+        {
+          "vsyncUs": 6033332573978,
+          "buildUs": 2164,
+          "rasterUs": 2231,
+          "totalUs": 22268
+        },
+        {
+          "vsyncUs": 6033332590645,
+          "buildUs": 2163,
+          "rasterUs": 2262,
+          "totalUs": 22310
+        },
+        {
+          "vsyncUs": 6033332607311,
+          "buildUs": 2209,
+          "rasterUs": 2381,
+          "totalUs": 22620
+        },
+        {
+          "vsyncUs": 6033332623978,
+          "buildUs": 1902,
+          "rasterUs": 2298,
+          "totalUs": 22314
+        },
+        {
+          "vsyncUs": 6033332640645,
+          "buildUs": 1881,
+          "rasterUs": 2192,
+          "totalUs": 22001
+        },
+        {
+          "vsyncUs": 6033332657311,
+          "buildUs": 1906,
+          "rasterUs": 2381,
+          "totalUs": 22330
+        },
+        {
+          "vsyncUs": 6033332673978,
+          "buildUs": 2223,
+          "rasterUs": 2306,
+          "totalUs": 22577
+        },
+        {
+          "vsyncUs": 6033332690645,
+          "buildUs": 1940,
+          "rasterUs": 2493,
+          "totalUs": 22347
+        },
+        {
+          "vsyncUs": 6033332707311,
+          "buildUs": 2168,
+          "rasterUs": 2179,
+          "totalUs": 22337
+        },
+        {
+          "vsyncUs": 6033332723978,
+          "buildUs": 2703,
+          "rasterUs": 2597,
+          "totalUs": 23243
+        },
+        {
+          "vsyncUs": 6033332740645,
+          "buildUs": 2121,
+          "rasterUs": 2117,
+          "totalUs": 22116
+        },
+        {
+          "vsyncUs": 6033332757311,
+          "buildUs": 2003,
+          "rasterUs": 2425,
+          "totalUs": 22311
+        },
+        {
+          "vsyncUs": 6033332773978,
+          "buildUs": 1980,
+          "rasterUs": 3211,
+          "totalUs": 23003
+        },
+        {
+          "vsyncUs": 6033332790645,
+          "buildUs": 2898,
+          "rasterUs": 2397,
+          "totalUs": 23182
+        },
+        {
+          "vsyncUs": 6033332807311,
+          "buildUs": 2191,
+          "rasterUs": 2305,
+          "totalUs": 22296
+        },
+        {
+          "vsyncUs": 6033332823978,
+          "buildUs": 2277,
+          "rasterUs": 2243,
+          "totalUs": 22342
+        },
+        {
+          "vsyncUs": 6033332840645,
+          "buildUs": 2426,
+          "rasterUs": 2226,
+          "totalUs": 22438
+        },
+        {
+          "vsyncUs": 6033332857311,
+          "buildUs": 1725,
+          "rasterUs": 2662,
+          "totalUs": 22169
+        },
+        {
+          "vsyncUs": 6033332873978,
+          "buildUs": 1669,
+          "rasterUs": 1584,
+          "totalUs": 21047
+        },
+        {
+          "vsyncUs": 6033332890645,
+          "buildUs": 1738,
+          "rasterUs": 2086,
+          "totalUs": 21729
+        },
+        {
+          "vsyncUs": 6033332907311,
+          "buildUs": 1495,
+          "rasterUs": 1905,
+          "totalUs": 21252
+        },
+        {
+          "vsyncUs": 6033332923978,
+          "buildUs": 2217,
+          "rasterUs": 3530,
+          "totalUs": 23618
+        },
+        {
+          "vsyncUs": 6033332940645,
+          "buildUs": 2711,
+          "rasterUs": 2277,
+          "totalUs": 22210
+        },
+        {
+          "vsyncUs": 6033332957311,
+          "buildUs": 2112,
+          "rasterUs": 2358,
+          "totalUs": 22089
+        },
+        {
+          "vsyncUs": 6033332973978,
+          "buildUs": 2270,
+          "rasterUs": 2310,
+          "totalUs": 22302
+        },
+        {
+          "vsyncUs": 6033332990645,
+          "buildUs": 2935,
+          "rasterUs": 2517,
+          "totalUs": 23255
+        },
+        {
+          "vsyncUs": 6033333007311,
+          "buildUs": 2071,
+          "rasterUs": 2377,
+          "totalUs": 22265
+        },
+        {
+          "vsyncUs": 6033333023978,
+          "buildUs": 2154,
+          "rasterUs": 2423,
+          "totalUs": 22421
+        },
+        {
+          "vsyncUs": 6033333040645,
+          "buildUs": 1933,
+          "rasterUs": 2482,
+          "totalUs": 22133
+        },
+        {
+          "vsyncUs": 6033333057311,
+          "buildUs": 2101,
+          "rasterUs": 2392,
+          "totalUs": 22321
+        },
+        {
+          "vsyncUs": 6033333073978,
+          "buildUs": 1590,
+          "rasterUs": 2351,
+          "totalUs": 21760
+        },
+        {
+          "vsyncUs": 6033333090645,
+          "buildUs": 1792,
+          "rasterUs": 2344,
+          "totalUs": 21932
+        },
+        {
+          "vsyncUs": 6033333107311,
+          "buildUs": 1800,
+          "rasterUs": 2395,
+          "totalUs": 21985
+        },
+        {
+          "vsyncUs": 6033333123978,
+          "buildUs": 1695,
+          "rasterUs": 2143,
+          "totalUs": 21642
+        },
+        {
+          "vsyncUs": 6033333140645,
+          "buildUs": 2076,
+          "rasterUs": 2495,
+          "totalUs": 22374
+        },
+        {
+          "vsyncUs": 6033333157311,
+          "buildUs": 1676,
+          "rasterUs": 2453,
+          "totalUs": 21931
+        },
+        {
+          "vsyncUs": 6033333173978,
+          "buildUs": 2368,
+          "rasterUs": 2496,
+          "totalUs": 22642
+        },
+        {
+          "vsyncUs": 6033333190645,
+          "buildUs": 1955,
+          "rasterUs": 2191,
+          "totalUs": 21913
+        },
+        {
+          "vsyncUs": 6033333207311,
+          "buildUs": 2221,
+          "rasterUs": 2457,
+          "totalUs": 22469
+        },
+        {
+          "vsyncUs": 6033333223978,
+          "buildUs": 1857,
+          "rasterUs": 2316,
+          "totalUs": 21979
+        },
+        {
+          "vsyncUs": 6033333240645,
+          "buildUs": 4382,
+          "rasterUs": 2482,
+          "totalUs": 24640
+        },
+        {
+          "vsyncUs": 6033333257311,
+          "buildUs": 2663,
+          "rasterUs": 2533,
+          "totalUs": 22946
+        },
+        {
+          "vsyncUs": 6033333273978,
+          "buildUs": 2244,
+          "rasterUs": 2525,
+          "totalUs": 22563
+        },
+        {
+          "vsyncUs": 6033333290645,
+          "buildUs": 1661,
+          "rasterUs": 2237,
+          "totalUs": 21716
+        },
+        {
+          "vsyncUs": 6033333307313,
+          "buildUs": 1794,
+          "rasterUs": 2308,
+          "totalUs": 21979
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "tapUpUs": 6033337068970,
+      "mountedUs": 74153,
+      "movingUs": 110185,
+      "visibleUs": 126186,
+      "frames": [
+        {
+          "vsyncUs": 6033337073978,
+          "buildUs": 58757,
+          "rasterUs": 3612,
+          "totalUs": 63077
+        },
+        {
+          "vsyncUs": 6033337143680,
+          "buildUs": 3779,
+          "rasterUs": 3421,
+          "totalUs": 21413
+        },
+        {
+          "vsyncUs": 6033337157311,
+          "buildUs": 2649,
+          "rasterUs": 2536,
+          "totalUs": 22920
+        },
+        {
+          "vsyncUs": 6033337173978,
+          "buildUs": 2087,
+          "rasterUs": 2342,
+          "totalUs": 22065
+        },
+        {
+          "vsyncUs": 6033337190645,
+          "buildUs": 2034,
+          "rasterUs": 2566,
+          "totalUs": 22110
+        },
+        {
+          "vsyncUs": 6033337207312,
+          "buildUs": 1851,
+          "rasterUs": 2715,
+          "totalUs": 22108
+        },
+        {
+          "vsyncUs": 6033337223978,
+          "buildUs": 2323,
+          "rasterUs": 2792,
+          "totalUs": 22780
+        },
+        {
+          "vsyncUs": 6033337240645,
+          "buildUs": 2103,
+          "rasterUs": 2913,
+          "totalUs": 22682
+        },
+        {
+          "vsyncUs": 6033337257312,
+          "buildUs": 2276,
+          "rasterUs": 2290,
+          "totalUs": 22112
+        },
+        {
+          "vsyncUs": 6033337273979,
+          "buildUs": 2005,
+          "rasterUs": 2196,
+          "totalUs": 21842
+        },
+        {
+          "vsyncUs": 6033337290645,
+          "buildUs": 2294,
+          "rasterUs": 3212,
+          "totalUs": 23101
+        },
+        {
+          "vsyncUs": 6033337307311,
+          "buildUs": 2320,
+          "rasterUs": 2773,
+          "totalUs": 22674
+        },
+        {
+          "vsyncUs": 6033337323979,
+          "buildUs": 2478,
+          "rasterUs": 2655,
+          "totalUs": 22762
+        },
+        {
+          "vsyncUs": 6033337340645,
+          "buildUs": 2346,
+          "rasterUs": 2658,
+          "totalUs": 22575
+        },
+        {
+          "vsyncUs": 6033337357312,
+          "buildUs": 2368,
+          "rasterUs": 3061,
+          "totalUs": 23028
+        },
+        {
+          "vsyncUs": 6033337373978,
+          "buildUs": 6295,
+          "rasterUs": 2251,
+          "totalUs": 26140
+        },
+        {
+          "vsyncUs": 6033337390645,
+          "buildUs": 1987,
+          "rasterUs": 2759,
+          "totalUs": 22292
+        },
+        {
+          "vsyncUs": 6033337407311,
+          "buildUs": 1921,
+          "rasterUs": 2123,
+          "totalUs": 21573
+        },
+        {
+          "vsyncUs": 6033337423978,
+          "buildUs": 1881,
+          "rasterUs": 2167,
+          "totalUs": 21577
+        },
+        {
+          "vsyncUs": 6033337440645,
+          "buildUs": 1884,
+          "rasterUs": 3187,
+          "totalUs": 22662
+        },
+        {
+          "vsyncUs": 6033337457311,
+          "buildUs": 2048,
+          "rasterUs": 2216,
+          "totalUs": 21797
+        },
+        {
+          "vsyncUs": 6033337473978,
+          "buildUs": 1775,
+          "rasterUs": 2262,
+          "totalUs": 21570
+        },
+        {
+          "vsyncUs": 6033337490645,
+          "buildUs": 2158,
+          "rasterUs": 2075,
+          "totalUs": 21782
+        },
+        {
+          "vsyncUs": 6033337507312,
+          "buildUs": 2013,
+          "rasterUs": 2090,
+          "totalUs": 21680
+        },
+        {
+          "vsyncUs": 6033337523978,
+          "buildUs": 1976,
+          "rasterUs": 2784,
+          "totalUs": 22302
+        },
+        {
+          "vsyncUs": 6033337540645,
+          "buildUs": 2012,
+          "rasterUs": 2068,
+          "totalUs": 21659
+        },
+        {
+          "vsyncUs": 6033337557312,
+          "buildUs": 2168,
+          "rasterUs": 2079,
+          "totalUs": 21829
+        },
+        {
+          "vsyncUs": 6033337573978,
+          "buildUs": 1992,
+          "rasterUs": 2025,
+          "totalUs": 21802
+        },
+        {
+          "vsyncUs": 6033337590645,
+          "buildUs": 2034,
+          "rasterUs": 2214,
+          "totalUs": 22022
+        },
+        {
+          "vsyncUs": 6033337607311,
+          "buildUs": 1908,
+          "rasterUs": 2210,
+          "totalUs": 21656
+        },
+        {
+          "vsyncUs": 6033337623978,
+          "buildUs": 1871,
+          "rasterUs": 1859,
+          "totalUs": 21494
+        },
+        {
+          "vsyncUs": 6033337640645,
+          "buildUs": 1503,
+          "rasterUs": 2333,
+          "totalUs": 21550
+        },
+        {
+          "vsyncUs": 6033337657311,
+          "buildUs": 1615,
+          "rasterUs": 1704,
+          "totalUs": 21028
+        },
+        {
+          "vsyncUs": 6033337673978,
+          "buildUs": 1696,
+          "rasterUs": 1955,
+          "totalUs": 21406
+        },
+        {
+          "vsyncUs": 6033337690645,
+          "buildUs": 1573,
+          "rasterUs": 1743,
+          "totalUs": 21029
+        },
+        {
+          "vsyncUs": 6033337707312,
+          "buildUs": 1529,
+          "rasterUs": 2673,
+          "totalUs": 22078
+        },
+        {
+          "vsyncUs": 6033337723978,
+          "buildUs": 2057,
+          "rasterUs": 1979,
+          "totalUs": 21844
+        },
+        {
+          "vsyncUs": 6033337740645,
+          "buildUs": 1951,
+          "rasterUs": 2168,
+          "totalUs": 21901
+        },
+        {
+          "vsyncUs": 6033337757311,
+          "buildUs": 1686,
+          "rasterUs": 1815,
+          "totalUs": 21350
+        },
+        {
+          "vsyncUs": 6033337773978,
+          "buildUs": 1757,
+          "rasterUs": 2030,
+          "totalUs": 21755
+        },
+        {
+          "vsyncUs": 6033337790645,
+          "buildUs": 2014,
+          "rasterUs": 2506,
+          "totalUs": 22440
+        },
+        {
+          "vsyncUs": 6033337807311,
+          "buildUs": 1850,
+          "rasterUs": 2193,
+          "totalUs": 21972
+        },
+        {
+          "vsyncUs": 6033337823978,
+          "buildUs": 1753,
+          "rasterUs": 1914,
+          "totalUs": 21660
+        },
+        {
+          "vsyncUs": 6033337840645,
+          "buildUs": 1700,
+          "rasterUs": 2343,
+          "totalUs": 21993
+        },
+        {
+          "vsyncUs": 6033337857311,
+          "buildUs": 1817,
+          "rasterUs": 2211,
+          "totalUs": 21927
+        },
+        {
+          "vsyncUs": 6033337873978,
+          "buildUs": 1726,
+          "rasterUs": 2150,
+          "totalUs": 21649
+        },
+        {
+          "vsyncUs": 6033337890645,
+          "buildUs": 1878,
+          "rasterUs": 1981,
+          "totalUs": 21783
+        },
+        {
+          "vsyncUs": 6033337907311,
+          "buildUs": 1773,
+          "rasterUs": 2021,
+          "totalUs": 21746
+        },
+        {
+          "vsyncUs": 6033337923978,
+          "buildUs": 1874,
+          "rasterUs": 2438,
+          "totalUs": 22216
+        },
+        {
+          "vsyncUs": 6033337940645,
+          "buildUs": 2846,
+          "rasterUs": 2574,
+          "totalUs": 23477
+        },
+        {
+          "vsyncUs": 6033337957311,
+          "buildUs": 1844,
+          "rasterUs": 2035,
+          "totalUs": 21808
+        },
+        {
+          "vsyncUs": 6033337973978,
+          "buildUs": 1862,
+          "rasterUs": 2243,
+          "totalUs": 21940
+        },
+        {
+          "vsyncUs": 6033337990645,
+          "buildUs": 1688,
+          "rasterUs": 2159,
+          "totalUs": 21621
+        },
+        {
+          "vsyncUs": 6033338007311,
+          "buildUs": 1821,
+          "rasterUs": 2555,
+          "totalUs": 22263
+        },
+        {
+          "vsyncUs": 6033338023978,
+          "buildUs": 1533,
+          "rasterUs": 2250,
+          "totalUs": 21584
+        },
+        {
+          "vsyncUs": 6033338040645,
+          "buildUs": 1901,
+          "rasterUs": 4108,
+          "totalUs": 23838
+        },
+        {
+          "vsyncUs": 6033338057311,
+          "buildUs": 1962,
+          "rasterUs": 3062,
+          "totalUs": 22235
+        },
+        {
+          "vsyncUs": 6033338073978,
+          "buildUs": 2564,
+          "rasterUs": 20547,
+          "totalUs": 40389
+        },
+        {
+          "vsyncUs": 6033338090645,
+          "buildUs": 2981,
+          "rasterUs": 4835,
+          "totalUs": 28816
+        },
+        {
+          "vsyncUs": 6033338107311,
+          "buildUs": 4093,
+          "rasterUs": 3118,
+          "totalUs": 24971
+        },
+        {
+          "vsyncUs": 6033338123978,
+          "buildUs": 2721,
+          "rasterUs": 2783,
+          "totalUs": 23304
+        },
+        {
+          "vsyncUs": 6033338140645,
+          "buildUs": 2590,
+          "rasterUs": 2707,
+          "totalUs": 23086
+        },
+        {
+          "vsyncUs": 6033338157312,
+          "buildUs": 2492,
+          "rasterUs": 2813,
+          "totalUs": 23010
+        },
+        {
+          "vsyncUs": 6033338173979,
+          "buildUs": 2109,
+          "rasterUs": 3388,
+          "totalUs": 23109
+        },
+        {
+          "vsyncUs": 6033338190645,
+          "buildUs": 1823,
+          "rasterUs": 2114,
+          "totalUs": 21381
+        },
+        {
+          "vsyncUs": 6033338207312,
+          "buildUs": 2705,
+          "rasterUs": 3510,
+          "totalUs": 23855
+        },
+        {
+          "vsyncUs": 6033338223979,
+          "buildUs": 1924,
+          "rasterUs": 2499,
+          "totalUs": 21923
+        },
+        {
+          "vsyncUs": 6033338240645,
+          "buildUs": 1982,
+          "rasterUs": 2630,
+          "totalUs": 22144
+        },
+        {
+          "vsyncUs": 6033338257312,
+          "buildUs": 2423,
+          "rasterUs": 2892,
+          "totalUs": 23052
+        },
+        {
+          "vsyncUs": 6033338273979,
+          "buildUs": 3170,
+          "rasterUs": 3425,
+          "totalUs": 24418
+        },
+        {
+          "vsyncUs": 6033338290645,
+          "buildUs": 2062,
+          "rasterUs": 2899,
+          "totalUs": 22807
+        },
+        {
+          "vsyncUs": 6033338307312,
+          "buildUs": 2002,
+          "rasterUs": 2721,
+          "totalUs": 22339
+        },
+        {
+          "vsyncUs": 6033338323978,
+          "buildUs": 2340,
+          "rasterUs": 3836,
+          "totalUs": 23860
+        },
+        {
+          "vsyncUs": 6033338340645,
+          "buildUs": 2494,
+          "rasterUs": 3845,
+          "totalUs": 24264
+        },
+        {
+          "vsyncUs": 6033338357312,
+          "buildUs": 2234,
+          "rasterUs": 2849,
+          "totalUs": 22746
+        },
+        {
+          "vsyncUs": 6033338373978,
+          "buildUs": 1886,
+          "rasterUs": 2605,
+          "totalUs": 22045
+        },
+        {
+          "vsyncUs": 6033338390645,
+          "buildUs": 1477,
+          "rasterUs": 1707,
+          "totalUs": 20659
+        },
+        {
+          "vsyncUs": 6033338407312,
+          "buildUs": 1500,
+          "rasterUs": 2039,
+          "totalUs": 21015
+        },
+        {
+          "vsyncUs": 6033338423978,
+          "buildUs": 1250,
+          "rasterUs": 1743,
+          "totalUs": 20426
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "tapUpUs": 6033342199887,
+      "mountedUs": 69756,
+      "movingUs": 110710,
+      "visibleUs": 110710,
+      "frames": [
+        {
+          "vsyncUs": 6033342207312,
+          "buildUs": 57678,
+          "rasterUs": 2340,
+          "totalUs": 61456
+        },
+        {
+          "vsyncUs": 6033342269993,
+          "buildUs": 959,
+          "rasterUs": 1695,
+          "totalUs": 7147
+        },
+        {
+          "vsyncUs": 6033342290645,
+          "buildUs": 1854,
+          "rasterUs": 1544,
+          "totalUs": 20602
+        },
+        {
+          "vsyncUs": 6033342307311,
+          "buildUs": 1321,
+          "rasterUs": 1715,
+          "totalUs": 20678
+        },
+        {
+          "vsyncUs": 6033342323978,
+          "buildUs": 1307,
+          "rasterUs": 2032,
+          "totalUs": 20811
+        },
+        {
+          "vsyncUs": 6033342340645,
+          "buildUs": 1532,
+          "rasterUs": 2245,
+          "totalUs": 21637
+        },
+        {
+          "vsyncUs": 6033342357311,
+          "buildUs": 1805,
+          "rasterUs": 2125,
+          "totalUs": 21720
+        },
+        {
+          "vsyncUs": 6033342373979,
+          "buildUs": 1682,
+          "rasterUs": 2119,
+          "totalUs": 21630
+        },
+        {
+          "vsyncUs": 6033342390645,
+          "buildUs": 1648,
+          "rasterUs": 2060,
+          "totalUs": 21524
+        },
+        {
+          "vsyncUs": 6033342407311,
+          "buildUs": 1790,
+          "rasterUs": 2220,
+          "totalUs": 21790
+        },
+        {
+          "vsyncUs": 6033342423978,
+          "buildUs": 1971,
+          "rasterUs": 2553,
+          "totalUs": 22338
+        },
+        {
+          "vsyncUs": 6033342440645,
+          "buildUs": 1991,
+          "rasterUs": 3073,
+          "totalUs": 22786
+        },
+        {
+          "vsyncUs": 6033342457312,
+          "buildUs": 2016,
+          "rasterUs": 3158,
+          "totalUs": 22783
+        },
+        {
+          "vsyncUs": 6033342473978,
+          "buildUs": 2661,
+          "rasterUs": 2661,
+          "totalUs": 22725
+        },
+        {
+          "vsyncUs": 6033342490645,
+          "buildUs": 1846,
+          "rasterUs": 2490,
+          "totalUs": 21853
+        },
+        {
+          "vsyncUs": 6033342507312,
+          "buildUs": 1876,
+          "rasterUs": 1969,
+          "totalUs": 21399
+        },
+        {
+          "vsyncUs": 6033342523979,
+          "buildUs": 4492,
+          "rasterUs": 1163,
+          "totalUs": 23222
+        },
+        {
+          "vsyncUs": 6033342540645,
+          "buildUs": 1303,
+          "rasterUs": 1617,
+          "totalUs": 20437
+        },
+        {
+          "vsyncUs": 6033342557311,
+          "buildUs": 1518,
+          "rasterUs": 2007,
+          "totalUs": 20988
+        },
+        {
+          "vsyncUs": 6033342573978,
+          "buildUs": 1425,
+          "rasterUs": 2107,
+          "totalUs": 20994
+        },
+        {
+          "vsyncUs": 6033342590645,
+          "buildUs": 1585,
+          "rasterUs": 1906,
+          "totalUs": 21012
+        },
+        {
+          "vsyncUs": 6033342607312,
+          "buildUs": 1683,
+          "rasterUs": 1806,
+          "totalUs": 20978
+        },
+        {
+          "vsyncUs": 6033342623978,
+          "buildUs": 1655,
+          "rasterUs": 1702,
+          "totalUs": 21070
+        },
+        {
+          "vsyncUs": 6033342640645,
+          "buildUs": 1501,
+          "rasterUs": 2087,
+          "totalUs": 21208
+        },
+        {
+          "vsyncUs": 6033342657312,
+          "buildUs": 1460,
+          "rasterUs": 1500,
+          "totalUs": 20447
+        },
+        {
+          "vsyncUs": 6033342673978,
+          "buildUs": 1413,
+          "rasterUs": 1517,
+          "totalUs": 20585
+        },
+        {
+          "vsyncUs": 6033342690645,
+          "buildUs": 1509,
+          "rasterUs": 1745,
+          "totalUs": 21036
+        },
+        {
+          "vsyncUs": 6033342707311,
+          "buildUs": 1093,
+          "rasterUs": 1486,
+          "totalUs": 20245
+        },
+        {
+          "vsyncUs": 6033342723978,
+          "buildUs": 1251,
+          "rasterUs": 1376,
+          "totalUs": 20335
+        },
+        {
+          "vsyncUs": 6033342740645,
+          "buildUs": 1058,
+          "rasterUs": 1517,
+          "totalUs": 20374
+        },
+        {
+          "vsyncUs": 6033342757311,
+          "buildUs": 1301,
+          "rasterUs": 1518,
+          "totalUs": 20619
+        },
+        {
+          "vsyncUs": 6033342773978,
+          "buildUs": 1376,
+          "rasterUs": 1862,
+          "totalUs": 21019
+        },
+        {
+          "vsyncUs": 6033342790645,
+          "buildUs": 1185,
+          "rasterUs": 2166,
+          "totalUs": 21042
+        },
+        {
+          "vsyncUs": 6033342807311,
+          "buildUs": 1651,
+          "rasterUs": 2240,
+          "totalUs": 21791
+        },
+        {
+          "vsyncUs": 6033342823978,
+          "buildUs": 1010,
+          "rasterUs": 1486,
+          "totalUs": 20268
+        },
+        {
+          "vsyncUs": 6033342840645,
+          "buildUs": 1035,
+          "rasterUs": 1960,
+          "totalUs": 20715
+        },
+        {
+          "vsyncUs": 6033342857311,
+          "buildUs": 1977,
+          "rasterUs": 2252,
+          "totalUs": 22144
+        },
+        {
+          "vsyncUs": 6033342873978,
+          "buildUs": 1699,
+          "rasterUs": 2129,
+          "totalUs": 21802
+        },
+        {
+          "vsyncUs": 6033342890645,
+          "buildUs": 1745,
+          "rasterUs": 2263,
+          "totalUs": 21954
+        },
+        {
+          "vsyncUs": 6033342907311,
+          "buildUs": 1442,
+          "rasterUs": 2253,
+          "totalUs": 21754
+        },
+        {
+          "vsyncUs": 6033342923978,
+          "buildUs": 1776,
+          "rasterUs": 2306,
+          "totalUs": 22161
+        },
+        {
+          "vsyncUs": 6033342940645,
+          "buildUs": 1885,
+          "rasterUs": 2422,
+          "totalUs": 22358
+        },
+        {
+          "vsyncUs": 6033342957311,
+          "buildUs": 2257,
+          "rasterUs": 2273,
+          "totalUs": 22768
+        },
+        {
+          "vsyncUs": 6033342973978,
+          "buildUs": 1856,
+          "rasterUs": 2264,
+          "totalUs": 22198
+        },
+        {
+          "vsyncUs": 6033342990645,
+          "buildUs": 1683,
+          "rasterUs": 2448,
+          "totalUs": 22218
+        },
+        {
+          "vsyncUs": 6033343007311,
+          "buildUs": 1397,
+          "rasterUs": 2259,
+          "totalUs": 21665
+        },
+        {
+          "vsyncUs": 6033343023978,
+          "buildUs": 2278,
+          "rasterUs": 2369,
+          "totalUs": 22732
+        },
+        {
+          "vsyncUs": 6033343040645,
+          "buildUs": 1241,
+          "rasterUs": 2022,
+          "totalUs": 21177
+        },
+        {
+          "vsyncUs": 6033343057311,
+          "buildUs": 1767,
+          "rasterUs": 1942,
+          "totalUs": 21707
+        },
+        {
+          "vsyncUs": 6033343073978,
+          "buildUs": 1689,
+          "rasterUs": 2314,
+          "totalUs": 22025
+        },
+        {
+          "vsyncUs": 6033343090645,
+          "buildUs": 2376,
+          "rasterUs": 2674,
+          "totalUs": 23078
+        },
+        {
+          "vsyncUs": 6033343107311,
+          "buildUs": 1476,
+          "rasterUs": 2155,
+          "totalUs": 21606
+        },
+        {
+          "vsyncUs": 6033343123978,
+          "buildUs": 1856,
+          "rasterUs": 2228,
+          "totalUs": 22108
+        },
+        {
+          "vsyncUs": 6033343140645,
+          "buildUs": 1293,
+          "rasterUs": 2247,
+          "totalUs": 21395
+        },
+        {
+          "vsyncUs": 6033343157311,
+          "buildUs": 1930,
+          "rasterUs": 3573,
+          "totalUs": 23379
+        },
+        {
+          "vsyncUs": 6033343173978,
+          "buildUs": 3060,
+          "rasterUs": 3003,
+          "totalUs": 23363
+        },
+        {
+          "vsyncUs": 6033343190645,
+          "buildUs": 3060,
+          "rasterUs": 2593,
+          "totalUs": 23411
+        },
+        {
+          "vsyncUs": 6033343207311,
+          "buildUs": 1721,
+          "rasterUs": 2530,
+          "totalUs": 21790
+        },
+        {
+          "vsyncUs": 6033343223978,
+          "buildUs": 2031,
+          "rasterUs": 2529,
+          "totalUs": 22524
+        },
+        {
+          "vsyncUs": 6033343240645,
+          "buildUs": 1657,
+          "rasterUs": 2595,
+          "totalUs": 22130
+        },
+        {
+          "vsyncUs": 6033343257311,
+          "buildUs": 1799,
+          "rasterUs": 2318,
+          "totalUs": 22021
+        },
+        {
+          "vsyncUs": 6033343273978,
+          "buildUs": 1805,
+          "rasterUs": 2520,
+          "totalUs": 22268
+        },
+        {
+          "vsyncUs": 6033343290645,
+          "buildUs": 2100,
+          "rasterUs": 2569,
+          "totalUs": 22585
+        },
+        {
+          "vsyncUs": 6033343307311,
+          "buildUs": 1942,
+          "rasterUs": 2627,
+          "totalUs": 22576
+        },
+        {
+          "vsyncUs": 6033343323978,
+          "buildUs": 2168,
+          "rasterUs": 2673,
+          "totalUs": 22882
+        },
+        {
+          "vsyncUs": 6033343340645,
+          "buildUs": 1346,
+          "rasterUs": 2573,
+          "totalUs": 21993
+        },
+        {
+          "vsyncUs": 6033343357311,
+          "buildUs": 1913,
+          "rasterUs": 2438,
+          "totalUs": 22397
+        },
+        {
+          "vsyncUs": 6033343373978,
+          "buildUs": 2229,
+          "rasterUs": 2800,
+          "totalUs": 23069
+        },
+        {
+          "vsyncUs": 6033343390645,
+          "buildUs": 2392,
+          "rasterUs": 2748,
+          "totalUs": 23133
+        },
+        {
+          "vsyncUs": 6033343407311,
+          "buildUs": 2088,
+          "rasterUs": 2611,
+          "totalUs": 22463
+        },
+        {
+          "vsyncUs": 6033343423978,
+          "buildUs": 2527,
+          "rasterUs": 2579,
+          "totalUs": 22733
+        },
+        {
+          "vsyncUs": 6033343440645,
+          "buildUs": 1818,
+          "rasterUs": 2530,
+          "totalUs": 22489
+        },
+        {
+          "vsyncUs": 6033343457311,
+          "buildUs": 2293,
+          "rasterUs": 2707,
+          "totalUs": 22961
+        },
+        {
+          "vsyncUs": 6033343473978,
+          "buildUs": 1811,
+          "rasterUs": 2630,
+          "totalUs": 22672
+        },
+        {
+          "vsyncUs": 6033343490645,
+          "buildUs": 2095,
+          "rasterUs": 2336,
+          "totalUs": 22334
+        },
+        {
+          "vsyncUs": 6033343507311,
+          "buildUs": 1385,
+          "rasterUs": 2465,
+          "totalUs": 21700
+        },
+        {
+          "vsyncUs": 6033343523978,
+          "buildUs": 1277,
+          "rasterUs": 2107,
+          "totalUs": 21237
+        },
+        {
+          "vsyncUs": 6033343540645,
+          "buildUs": 1562,
+          "rasterUs": 2536,
+          "totalUs": 22142
+        }
+      ]
+    },
+    {
+      "trial": 5,
+      "tapUpUs": 6033347310025,
+      "mountedUs": 73538,
+      "movingUs": 116713,
+      "visibleUs": 116713,
+      "frames": [
+        {
+          "vsyncUs": 6033347323979,
+          "buildUs": 56230,
+          "rasterUs": 2813,
+          "totalUs": 59744
+        },
+        {
+          "vsyncUs": 6033347383867,
+          "buildUs": 766,
+          "rasterUs": 1720,
+          "totalUs": 9757
+        },
+        {
+          "vsyncUs": 6033347407312,
+          "buildUs": 1505,
+          "rasterUs": 1578,
+          "totalUs": 20271
+        },
+        {
+          "vsyncUs": 6033347423978,
+          "buildUs": 1152,
+          "rasterUs": 1993,
+          "totalUs": 20729
+        },
+        {
+          "vsyncUs": 6033347440645,
+          "buildUs": 1316,
+          "rasterUs": 1663,
+          "totalUs": 20619
+        },
+        {
+          "vsyncUs": 6033347457311,
+          "buildUs": 1118,
+          "rasterUs": 1823,
+          "totalUs": 20518
+        },
+        {
+          "vsyncUs": 6033347473978,
+          "buildUs": 1084,
+          "rasterUs": 1938,
+          "totalUs": 20678
+        },
+        {
+          "vsyncUs": 6033347490645,
+          "buildUs": 2611,
+          "rasterUs": 2040,
+          "totalUs": 22334
+        },
+        {
+          "vsyncUs": 6033347507311,
+          "buildUs": 1155,
+          "rasterUs": 1846,
+          "totalUs": 20617
+        },
+        {
+          "vsyncUs": 6033347523978,
+          "buildUs": 1036,
+          "rasterUs": 1923,
+          "totalUs": 20596
+        },
+        {
+          "vsyncUs": 6033347540645,
+          "buildUs": 1103,
+          "rasterUs": 1798,
+          "totalUs": 20525
+        },
+        {
+          "vsyncUs": 6033347557311,
+          "buildUs": 865,
+          "rasterUs": 1796,
+          "totalUs": 20346
+        },
+        {
+          "vsyncUs": 6033347573978,
+          "buildUs": 1096,
+          "rasterUs": 1851,
+          "totalUs": 20576
+        },
+        {
+          "vsyncUs": 6033347590645,
+          "buildUs": 1068,
+          "rasterUs": 2161,
+          "totalUs": 20810
+        },
+        {
+          "vsyncUs": 6033347607311,
+          "buildUs": 904,
+          "rasterUs": 1678,
+          "totalUs": 20315
+        },
+        {
+          "vsyncUs": 6033347623978,
+          "buildUs": 2062,
+          "rasterUs": 1787,
+          "totalUs": 21647
+        },
+        {
+          "vsyncUs": 6033347640645,
+          "buildUs": 879,
+          "rasterUs": 1408,
+          "totalUs": 19969
+        },
+        {
+          "vsyncUs": 6033347657312,
+          "buildUs": 2565,
+          "rasterUs": 1394,
+          "totalUs": 21757
+        },
+        {
+          "vsyncUs": 6033347673978,
+          "buildUs": 2787,
+          "rasterUs": 2110,
+          "totalUs": 22855
+        },
+        {
+          "vsyncUs": 6033347690645,
+          "buildUs": 1328,
+          "rasterUs": 1384,
+          "totalUs": 20396
+        },
+        {
+          "vsyncUs": 6033347707311,
+          "buildUs": 1095,
+          "rasterUs": 1479,
+          "totalUs": 20292
+        },
+        {
+          "vsyncUs": 6033347723978,
+          "buildUs": 1106,
+          "rasterUs": 1782,
+          "totalUs": 20618
+        },
+        {
+          "vsyncUs": 6033347740645,
+          "buildUs": 2248,
+          "rasterUs": 2015,
+          "totalUs": 22077
+        },
+        {
+          "vsyncUs": 6033347757311,
+          "buildUs": 986,
+          "rasterUs": 2290,
+          "totalUs": 21006
+        },
+        {
+          "vsyncUs": 6033347773978,
+          "buildUs": 2479,
+          "rasterUs": 1936,
+          "totalUs": 22252
+        },
+        {
+          "vsyncUs": 6033347790649,
+          "buildUs": 2162,
+          "rasterUs": 1305,
+          "totalUs": 21279
+        },
+        {
+          "vsyncUs": 6033347807312,
+          "buildUs": 2657,
+          "rasterUs": 2775,
+          "totalUs": 23272
+        },
+        {
+          "vsyncUs": 6033347823979,
+          "buildUs": 3039,
+          "rasterUs": 1675,
+          "totalUs": 22618
+        },
+        {
+          "vsyncUs": 6033347840645,
+          "buildUs": 2165,
+          "rasterUs": 1480,
+          "totalUs": 21605
+        },
+        {
+          "vsyncUs": 6033347857311,
+          "buildUs": 2119,
+          "rasterUs": 1539,
+          "totalUs": 21451
+        },
+        {
+          "vsyncUs": 6033347873978,
+          "buildUs": 1059,
+          "rasterUs": 1678,
+          "totalUs": 20464
+        },
+        {
+          "vsyncUs": 6033347890645,
+          "buildUs": 3050,
+          "rasterUs": 1438,
+          "totalUs": 22276
+        },
+        {
+          "vsyncUs": 6033347907312,
+          "buildUs": 1988,
+          "rasterUs": 1652,
+          "totalUs": 21448
+        },
+        {
+          "vsyncUs": 6033347923978,
+          "buildUs": 2324,
+          "rasterUs": 1470,
+          "totalUs": 21534
+        },
+        {
+          "vsyncUs": 6033347940645,
+          "buildUs": 2724,
+          "rasterUs": 1995,
+          "totalUs": 22655
+        },
+        {
+          "vsyncUs": 6033347957312,
+          "buildUs": 2614,
+          "rasterUs": 1674,
+          "totalUs": 22367
+        },
+        {
+          "vsyncUs": 6033347973978,
+          "buildUs": 2387,
+          "rasterUs": 1632,
+          "totalUs": 21852
+        },
+        {
+          "vsyncUs": 6033347990645,
+          "buildUs": 1891,
+          "rasterUs": 1279,
+          "totalUs": 21051
+        },
+        {
+          "vsyncUs": 6033348007312,
+          "buildUs": 2580,
+          "rasterUs": 2624,
+          "totalUs": 23096
+        },
+        {
+          "vsyncUs": 6033348023978,
+          "buildUs": 2737,
+          "rasterUs": 1892,
+          "totalUs": 22501
+        },
+        {
+          "vsyncUs": 6033348040645,
+          "buildUs": 1092,
+          "rasterUs": 1442,
+          "totalUs": 20149
+        },
+        {
+          "vsyncUs": 6033348057311,
+          "buildUs": 1340,
+          "rasterUs": 1551,
+          "totalUs": 20684
+        },
+        {
+          "vsyncUs": 6033348073978,
+          "buildUs": 920,
+          "rasterUs": 1949,
+          "totalUs": 20707
+        },
+        {
+          "vsyncUs": 6033348090645,
+          "buildUs": 3101,
+          "rasterUs": 2361,
+          "totalUs": 23405
+        },
+        {
+          "vsyncUs": 6033348107312,
+          "buildUs": 2856,
+          "rasterUs": 1864,
+          "totalUs": 22688
+        },
+        {
+          "vsyncUs": 6033348123978,
+          "buildUs": 1045,
+          "rasterUs": 1666,
+          "totalUs": 20555
+        },
+        {
+          "vsyncUs": 6033348140645,
+          "buildUs": 2457,
+          "rasterUs": 1561,
+          "totalUs": 21875
+        },
+        {
+          "vsyncUs": 6033348157311,
+          "buildUs": 941,
+          "rasterUs": 1546,
+          "totalUs": 20169
+        },
+        {
+          "vsyncUs": 6033348173978,
+          "buildUs": 1827,
+          "rasterUs": 1410,
+          "totalUs": 21151
+        },
+        {
+          "vsyncUs": 6033348190645,
+          "buildUs": 3734,
+          "rasterUs": 1767,
+          "totalUs": 23386
+        },
+        {
+          "vsyncUs": 6033348207311,
+          "buildUs": 1177,
+          "rasterUs": 1818,
+          "totalUs": 20914
+        },
+        {
+          "vsyncUs": 6033348223978,
+          "buildUs": 1044,
+          "rasterUs": 2071,
+          "totalUs": 20972
+        },
+        {
+          "vsyncUs": 6033348240645,
+          "buildUs": 3421,
+          "rasterUs": 2265,
+          "totalUs": 23771
+        },
+        {
+          "vsyncUs": 6033348257311,
+          "buildUs": 1325,
+          "rasterUs": 2150,
+          "totalUs": 21219
+        },
+        {
+          "vsyncUs": 6033348273978,
+          "buildUs": 2477,
+          "rasterUs": 3557,
+          "totalUs": 23876
+        },
+        {
+          "vsyncUs": 6033348290645,
+          "buildUs": 1885,
+          "rasterUs": 2662,
+          "totalUs": 21733
+        },
+        {
+          "vsyncUs": 6033348307312,
+          "buildUs": 2936,
+          "rasterUs": 2884,
+          "totalUs": 23605
+        },
+        {
+          "vsyncUs": 6033348323978,
+          "buildUs": 1913,
+          "rasterUs": 2387,
+          "totalUs": 21830
+        },
+        {
+          "vsyncUs": 6033348340645,
+          "buildUs": 2099,
+          "rasterUs": 2688,
+          "totalUs": 22458
+        },
+        {
+          "vsyncUs": 6033348357312,
+          "buildUs": 2302,
+          "rasterUs": 2940,
+          "totalUs": 23136
+        },
+        {
+          "vsyncUs": 6033348373978,
+          "buildUs": 2210,
+          "rasterUs": 2386,
+          "totalUs": 22382
+        },
+        {
+          "vsyncUs": 6033348390645,
+          "buildUs": 2607,
+          "rasterUs": 2820,
+          "totalUs": 23297
+        },
+        {
+          "vsyncUs": 6033348407311,
+          "buildUs": 1841,
+          "rasterUs": 2188,
+          "totalUs": 21642
+        },
+        {
+          "vsyncUs": 6033348423978,
+          "buildUs": 2492,
+          "rasterUs": 1998,
+          "totalUs": 22353
+        },
+        {
+          "vsyncUs": 6033348440645,
+          "buildUs": 1916,
+          "rasterUs": 1736,
+          "totalUs": 21430
+        },
+        {
+          "vsyncUs": 6033348457311,
+          "buildUs": 1328,
+          "rasterUs": 2595,
+          "totalUs": 21826
+        },
+        {
+          "vsyncUs": 6033348473978,
+          "buildUs": 1725,
+          "rasterUs": 2144,
+          "totalUs": 21786
+        },
+        {
+          "vsyncUs": 6033348490645,
+          "buildUs": 1140,
+          "rasterUs": 2219,
+          "totalUs": 21107
+        },
+        {
+          "vsyncUs": 6033348507311,
+          "buildUs": 4883,
+          "rasterUs": 2951,
+          "totalUs": 25745
+        },
+        {
+          "vsyncUs": 6033348523978,
+          "buildUs": 1619,
+          "rasterUs": 2777,
+          "totalUs": 22362
+        },
+        {
+          "vsyncUs": 6033348540645,
+          "buildUs": 1760,
+          "rasterUs": 2599,
+          "totalUs": 22268
+        },
+        {
+          "vsyncUs": 6033348557311,
+          "buildUs": 1471,
+          "rasterUs": 2592,
+          "totalUs": 21886
+        },
+        {
+          "vsyncUs": 6033348573978,
+          "buildUs": 1436,
+          "rasterUs": 2857,
+          "totalUs": 22172
+        },
+        {
+          "vsyncUs": 6033348590645,
+          "buildUs": 1516,
+          "rasterUs": 2830,
+          "totalUs": 22374
+        },
+        {
+          "vsyncUs": 6033348607311,
+          "buildUs": 2807,
+          "rasterUs": 2777,
+          "totalUs": 23519
+        },
+        {
+          "vsyncUs": 6033348623978,
+          "buildUs": 1809,
+          "rasterUs": 2746,
+          "totalUs": 22476
+        },
+        {
+          "vsyncUs": 6033348640645,
+          "buildUs": 1640,
+          "rasterUs": 2847,
+          "totalUs": 22402
+        },
+        {
+          "vsyncUs": 6033348657311,
+          "buildUs": 1495,
+          "rasterUs": 2941,
+          "totalUs": 22365
+        }
+      ]
+    },
+    {
+      "trial": 6,
+      "tapUpUs": 6033352411044,
+      "mountedUs": 67728,
+      "movingUs": 116264,
+      "visibleUs": 116264,
+      "frames": [
+        {
+          "vsyncUs": 6033352407312,
+          "buildUs": 51550,
+          "rasterUs": 3014,
+          "totalUs": 71835
+        },
+        {
+          "vsyncUs": 6033352479057,
+          "buildUs": 969,
+          "rasterUs": 2438,
+          "totalUs": 15501
+        },
+        {
+          "vsyncUs": 6033352507312,
+          "buildUs": 1684,
+          "rasterUs": 1786,
+          "totalUs": 20711
+        },
+        {
+          "vsyncUs": 6033352523978,
+          "buildUs": 1272,
+          "rasterUs": 1815,
+          "totalUs": 20571
+        },
+        {
+          "vsyncUs": 6033352540645,
+          "buildUs": 1215,
+          "rasterUs": 1851,
+          "totalUs": 20507
+        },
+        {
+          "vsyncUs": 6033352557311,
+          "buildUs": 1204,
+          "rasterUs": 2022,
+          "totalUs": 20851
+        },
+        {
+          "vsyncUs": 6033352573978,
+          "buildUs": 1403,
+          "rasterUs": 1874,
+          "totalUs": 20895
+        },
+        {
+          "vsyncUs": 6033352590645,
+          "buildUs": 1407,
+          "rasterUs": 2037,
+          "totalUs": 21058
+        },
+        {
+          "vsyncUs": 6033352607311,
+          "buildUs": 1488,
+          "rasterUs": 2016,
+          "totalUs": 21212
+        },
+        {
+          "vsyncUs": 6033352623978,
+          "buildUs": 1139,
+          "rasterUs": 2106,
+          "totalUs": 20834
+        },
+        {
+          "vsyncUs": 6033352640645,
+          "buildUs": 1105,
+          "rasterUs": 1913,
+          "totalUs": 20743
+        },
+        {
+          "vsyncUs": 6033352657311,
+          "buildUs": 973,
+          "rasterUs": 1950,
+          "totalUs": 20423
+        },
+        {
+          "vsyncUs": 6033352673978,
+          "buildUs": 996,
+          "rasterUs": 2339,
+          "totalUs": 20941
+        },
+        {
+          "vsyncUs": 6033352690645,
+          "buildUs": 1231,
+          "rasterUs": 2661,
+          "totalUs": 21540
+        },
+        {
+          "vsyncUs": 6033352707311,
+          "buildUs": 1739,
+          "rasterUs": 2230,
+          "totalUs": 21893
+        },
+        {
+          "vsyncUs": 6033352723978,
+          "buildUs": 1397,
+          "rasterUs": 1914,
+          "totalUs": 20508
+        },
+        {
+          "vsyncUs": 6033352740645,
+          "buildUs": 1620,
+          "rasterUs": 1839,
+          "totalUs": 20994
+        },
+        {
+          "vsyncUs": 6033352757311,
+          "buildUs": 1197,
+          "rasterUs": 1802,
+          "totalUs": 20615
+        },
+        {
+          "vsyncUs": 6033352773978,
+          "buildUs": 1798,
+          "rasterUs": 2098,
+          "totalUs": 21440
+        },
+        {
+          "vsyncUs": 6033352790645,
+          "buildUs": 2196,
+          "rasterUs": 2661,
+          "totalUs": 22633
+        },
+        {
+          "vsyncUs": 6033352807311,
+          "buildUs": 1448,
+          "rasterUs": 1936,
+          "totalUs": 20871
+        },
+        {
+          "vsyncUs": 6033352823978,
+          "buildUs": 1452,
+          "rasterUs": 1811,
+          "totalUs": 20770
+        },
+        {
+          "vsyncUs": 6033352840645,
+          "buildUs": 1458,
+          "rasterUs": 2162,
+          "totalUs": 21275
+        },
+        {
+          "vsyncUs": 6033352857311,
+          "buildUs": 1479,
+          "rasterUs": 2133,
+          "totalUs": 21314
+        },
+        {
+          "vsyncUs": 6033352873978,
+          "buildUs": 1435,
+          "rasterUs": 1843,
+          "totalUs": 20679
+        },
+        {
+          "vsyncUs": 6033352890645,
+          "buildUs": 3698,
+          "rasterUs": 2905,
+          "totalUs": 24862
+        },
+        {
+          "vsyncUs": 6033352907311,
+          "buildUs": 3343,
+          "rasterUs": 1927,
+          "totalUs": 22962
+        },
+        {
+          "vsyncUs": 6033352923978,
+          "buildUs": 1428,
+          "rasterUs": 1972,
+          "totalUs": 21121
+        },
+        {
+          "vsyncUs": 6033352940645,
+          "buildUs": 1340,
+          "rasterUs": 2172,
+          "totalUs": 21189
+        },
+        {
+          "vsyncUs": 6033352957311,
+          "buildUs": 1379,
+          "rasterUs": 2139,
+          "totalUs": 21225
+        },
+        {
+          "vsyncUs": 6033352973978,
+          "buildUs": 1611,
+          "rasterUs": 2164,
+          "totalUs": 21539
+        },
+        {
+          "vsyncUs": 6033352990645,
+          "buildUs": 3296,
+          "rasterUs": 2579,
+          "totalUs": 23787
+        },
+        {
+          "vsyncUs": 6033353007311,
+          "buildUs": 1683,
+          "rasterUs": 2386,
+          "totalUs": 21825
+        },
+        {
+          "vsyncUs": 6033353023978,
+          "buildUs": 1804,
+          "rasterUs": 2392,
+          "totalUs": 22035
+        },
+        {
+          "vsyncUs": 6033353040645,
+          "buildUs": 2153,
+          "rasterUs": 2256,
+          "totalUs": 22234
+        },
+        {
+          "vsyncUs": 6033353057311,
+          "buildUs": 2002,
+          "rasterUs": 2570,
+          "totalUs": 22476
+        },
+        {
+          "vsyncUs": 6033353073978,
+          "buildUs": 2226,
+          "rasterUs": 2335,
+          "totalUs": 22441
+        },
+        {
+          "vsyncUs": 6033353090645,
+          "buildUs": 1731,
+          "rasterUs": 2475,
+          "totalUs": 22106
+        },
+        {
+          "vsyncUs": 6033353107311,
+          "buildUs": 1796,
+          "rasterUs": 2348,
+          "totalUs": 22161
+        },
+        {
+          "vsyncUs": 6033353123978,
+          "buildUs": 1943,
+          "rasterUs": 2498,
+          "totalUs": 22261
+        },
+        {
+          "vsyncUs": 6033353140645,
+          "buildUs": 2805,
+          "rasterUs": 2574,
+          "totalUs": 23391
+        },
+        {
+          "vsyncUs": 6033353157311,
+          "buildUs": 1215,
+          "rasterUs": 2211,
+          "totalUs": 21178
+        },
+        {
+          "vsyncUs": 6033353173978,
+          "buildUs": 1535,
+          "rasterUs": 1876,
+          "totalUs": 21241
+        },
+        {
+          "vsyncUs": 6033353190645,
+          "buildUs": 1891,
+          "rasterUs": 1794,
+          "totalUs": 21366
+        },
+        {
+          "vsyncUs": 6033353207311,
+          "buildUs": 1132,
+          "rasterUs": 2065,
+          "totalUs": 21023
+        },
+        {
+          "vsyncUs": 6033353223978,
+          "buildUs": 1232,
+          "rasterUs": 2104,
+          "totalUs": 21054
+        },
+        {
+          "vsyncUs": 6033353240645,
+          "buildUs": 1038,
+          "rasterUs": 1675,
+          "totalUs": 20415
+        },
+        {
+          "vsyncUs": 6033353257311,
+          "buildUs": 1087,
+          "rasterUs": 1688,
+          "totalUs": 20503
+        },
+        {
+          "vsyncUs": 6033353273978,
+          "buildUs": 1394,
+          "rasterUs": 1529,
+          "totalUs": 20760
+        },
+        {
+          "vsyncUs": 6033353290645,
+          "buildUs": 1602,
+          "rasterUs": 1762,
+          "totalUs": 21120
+        },
+        {
+          "vsyncUs": 6033353307311,
+          "buildUs": 1123,
+          "rasterUs": 1562,
+          "totalUs": 20393
+        },
+        {
+          "vsyncUs": 6033353323978,
+          "buildUs": 1035,
+          "rasterUs": 1620,
+          "totalUs": 20242
+        },
+        {
+          "vsyncUs": 6033353340645,
+          "buildUs": 1416,
+          "rasterUs": 2058,
+          "totalUs": 21239
+        },
+        {
+          "vsyncUs": 6033353357311,
+          "buildUs": 1105,
+          "rasterUs": 1562,
+          "totalUs": 20600
+        },
+        {
+          "vsyncUs": 6033353373978,
+          "buildUs": 1381,
+          "rasterUs": 3151,
+          "totalUs": 22323
+        },
+        {
+          "vsyncUs": 6033353390645,
+          "buildUs": 1625,
+          "rasterUs": 3263,
+          "totalUs": 22050
+        },
+        {
+          "vsyncUs": 6033353407312,
+          "buildUs": 4952,
+          "rasterUs": 21559,
+          "totalUs": 43807
+        },
+        {
+          "vsyncUs": 6033353423978,
+          "buildUs": 2110,
+          "rasterUs": 4189,
+          "totalUs": 31366
+        },
+        {
+          "vsyncUs": 6033353440645,
+          "buildUs": 1662,
+          "rasterUs": 4614,
+          "totalUs": 24752
+        },
+        {
+          "vsyncUs": 6033353457311,
+          "buildUs": 1255,
+          "rasterUs": 1915,
+          "totalUs": 20639
+        },
+        {
+          "vsyncUs": 6033353473978,
+          "buildUs": 2160,
+          "rasterUs": 1903,
+          "totalUs": 21508
+        },
+        {
+          "vsyncUs": 6033353490645,
+          "buildUs": 1288,
+          "rasterUs": 1820,
+          "totalUs": 20546
+        },
+        {
+          "vsyncUs": 6033353507311,
+          "buildUs": 1451,
+          "rasterUs": 2064,
+          "totalUs": 21254
+        },
+        {
+          "vsyncUs": 6033353523978,
+          "buildUs": 1298,
+          "rasterUs": 2078,
+          "totalUs": 20942
+        },
+        {
+          "vsyncUs": 6033353540645,
+          "buildUs": 1248,
+          "rasterUs": 1983,
+          "totalUs": 20981
+        },
+        {
+          "vsyncUs": 6033353557311,
+          "buildUs": 1020,
+          "rasterUs": 1781,
+          "totalUs": 20468
+        },
+        {
+          "vsyncUs": 6033353573978,
+          "buildUs": 948,
+          "rasterUs": 1771,
+          "totalUs": 20343
+        },
+        {
+          "vsyncUs": 6033353590645,
+          "buildUs": 916,
+          "rasterUs": 1734,
+          "totalUs": 20302
+        },
+        {
+          "vsyncUs": 6033353607311,
+          "buildUs": 849,
+          "rasterUs": 1890,
+          "totalUs": 20413
+        },
+        {
+          "vsyncUs": 6033353623978,
+          "buildUs": 1964,
+          "rasterUs": 1816,
+          "totalUs": 21600
+        },
+        {
+          "vsyncUs": 6033353640645,
+          "buildUs": 873,
+          "rasterUs": 1688,
+          "totalUs": 20276
+        },
+        {
+          "vsyncUs": 6033353657312,
+          "buildUs": 2653,
+          "rasterUs": 2037,
+          "totalUs": 22545
+        },
+        {
+          "vsyncUs": 6033353673978,
+          "buildUs": 2258,
+          "rasterUs": 1962,
+          "totalUs": 22187
+        },
+        {
+          "vsyncUs": 6033353690645,
+          "buildUs": 2036,
+          "rasterUs": 1992,
+          "totalUs": 21749
+        },
+        {
+          "vsyncUs": 6033353707312,
+          "buildUs": 2732,
+          "rasterUs": 2262,
+          "totalUs": 22811
+        },
+        {
+          "vsyncUs": 6033353723978,
+          "buildUs": 1003,
+          "rasterUs": 1747,
+          "totalUs": 20409
+        },
+        {
+          "vsyncUs": 6033353740645,
+          "buildUs": 3305,
+          "rasterUs": 2417,
+          "totalUs": 23698
+        },
+        {
+          "vsyncUs": 6033353757311,
+          "buildUs": 798,
+          "rasterUs": 2064,
+          "totalUs": 20528
+        }
+      ]
+    }
+  ]
+}

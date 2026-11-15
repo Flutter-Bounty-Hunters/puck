@@ -27,16 +27,11 @@ void main() {
               const puck = ColoredBox(key: parent, color: Color(0xFF0000FF));
               const items = [ColoredBox(key: item, color: Color(0xFF00FF00))];
               return show == null
-                  ? const PuckOverlay(
-                      puck: puck,
-                      menuItems: items,
-                      child: SizedBox.expand(),
-                    )
-                  : PuckOverlay(
+                  ? const PuckMenu.singleLevel(rootPuck: puck, puckItems: items)
+                  : PuckMenu.singleLevel(
                       showRopes: show!,
-                      puck: puck,
-                      menuItems: items,
-                      child: const SizedBox.expand(),
+                      rootPuck: puck,
+                      puckItems: items,
                     );
             },
           ),

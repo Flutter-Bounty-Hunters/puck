@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/physics.dart';
@@ -5,14 +6,21 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import 'puck_cables.dart';
+import 'puck_opening_trace.dart';
+import 'puck_level_curves.dart';
 
 /// Retargets a two-dimensional spring without discarding its current velocity.
 class SpringPuck extends StatefulWidget {
   const SpringPuck({
     super.key,
     required this.origin,
+    this.delay = Duration.zero,
+    this.motionClock,
     required this.cables,
     required this.showRopes,
+    this.curves,
+    this.level = 0,
+    this.order = 0,
     required this.target,
     required this.diameter,
     required this.parentDiameter,
@@ -20,12 +28,21 @@ class SpringPuck extends StatefulWidget {
     required this.horizontalInset,
     required this.expanded,
     required this.onCollapsed,
+    this.onExpanded,
     required this.child,
   });
 
   final Offset origin;
+  final Duration delay;
+
+  /// Shared clock started when opening/closing is requested, before layout.
+  final Stopwatch? motionClock;
   final PuckCables cables;
   final bool showRopes;
+  final PuckLevelCurves? curves;
+  final int level;
+  final int order;
+
   final Offset target;
   final double diameter;
   final double parentDiameter;
@@ -33,6 +50,7 @@ class SpringPuck extends StatefulWidget {
   final double horizontalInset;
   final bool expanded;
   final VoidCallback onCollapsed;
+  final VoidCallback? onExpanded;
   final Widget child;
 
   @override
@@ -54,22 +72,54 @@ class _SpringPuckState extends State<SpringPuck>
   _MenuRope? _rope;
   double _lastTime = 0;
   double? _settlingSince;
-  bool _prepared = false;
+  Timer? _delayTimer;
+  Duration _elapsedOffset = Duration.zero;
+  Stopwatch? _firstTickClock;
   bool _hasAdvanced = false;
+  bool _reportedExpanded = false;
+  int _traceTicks = 0;
 
   @override
   void initState() {
     super.initState();
-    // Build, lay out, and paint the child under its parent before starting
-    // its ticker. Keep the latest target if the menu changes in this frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _prepared = true;
-      _retarget();
-    });
+    _scheduleRetarget();
   }
 
-  void _retarget() {
+  void _scheduleRetarget() {
+    if (PuckOpeningTrace.representative(widget.level, widget.order)) {
+      PuckOpeningTrace.instant('spring.schedule', {
+        'level': widget.level,
+        'delay_us': widget.delay.inMicroseconds,
+      });
+    }
+    _delayTimer?.cancel();
+    _delayTimer = null;
+    _ticker.stop();
+    // Level delays begin at the request, not after the layout/preparation frame.
+    final remaining =
+        widget.delay - (widget.motionClock?.elapsed ?? Duration.zero);
+    void launch() {
+      final elapsed = widget.motionClock == null
+          ? Duration.zero
+          : widget.motionClock!.elapsed - widget.delay;
+      _retarget(elapsed: elapsed < Duration.zero ? Duration.zero : elapsed);
+    }
+
+    if (remaining <= Duration.zero) {
+      launch();
+    } else {
+      _delayTimer = Timer(remaining, () {
+        _delayTimer = null;
+        if (mounted) launch();
+      });
+    }
+  }
+
+  void _retarget({Duration elapsed = Duration.zero}) {
+    _traceTicks = 0;
+    if (PuckOpeningTrace.representative(widget.level, widget.order)) {
+      PuckOpeningTrace.instant('spring.retarget', {'level': widget.level});
+    }
     _ticker.stop();
     _x = SpringSimulation(
       _spring,
@@ -85,11 +135,50 @@ class _SpringPuckState extends State<SpringPuck>
     );
     _lastTime = 0;
     _settlingSince = null;
+    _elapsedOffset = Duration(
+      microseconds: (elapsed.inMicroseconds / timeDilation).round(),
+    );
+    // Tickers started outside a frame establish their origin on their first
+    // callback. Count that wait too, rather than delivering a zero-time tick.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    _firstTickClock =
+        phase == SchedulerPhase.idle ||
+            phase == SchedulerPhase.postFrameCallbacks
+        ? (WidgetsBinding.instance.samplingClock.stopwatch()..start())
+        : null;
     _ticker.start();
+    if (PuckOpeningTrace.representative(widget.level, widget.order)) {
+      PuckOpeningTrace.instant('spring.ticker.started', {
+        'level': widget.level,
+      });
+    }
+    // Layout already has the new target. Sample now so this very frame can
+    // paint movement instead of waiting for the next animation callback.
+    if (widget.expanded && _elapsedOffset > Duration.zero) {
+      _tick(Duration.zero, eager: true);
+    }
   }
 
-  void _tick(Duration elapsed) {
-    final t = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+  void _tick(Duration elapsed, {bool eager = false}) {
+    if (!eager && _firstTickClock != null) {
+      _elapsedOffset += Duration(
+        microseconds: (_firstTickClock!.elapsedMicroseconds / timeDilation)
+            .round(),
+      );
+      _firstTickClock = null;
+    }
+    final simulationElapsed = elapsed + _elapsedOffset;
+    if (PuckOpeningTrace.enabled &&
+        _traceTicks++ < 3 &&
+        PuckOpeningTrace.representative(widget.level, widget.order)) {
+      PuckOpeningTrace.instant('spring.tick', {
+        'level': widget.level,
+        'tick': _traceTicks,
+        'elapsed_us': simulationElapsed.inMicroseconds,
+        'eager': eager,
+      });
+    }
+    final t = simulationElapsed.inMicroseconds / Duration.microsecondsPerSecond;
     setState(() {
       _hasAdvanced = _hasAdvanced || t > 0;
       _position = Offset(_x!.x(t), _y!.x(t));
@@ -129,26 +218,53 @@ class _SpringPuckState extends State<SpringPuck>
       }
     });
     if (widget.showRopes) widget.cables.repaint();
+    widget.curves?.repaint();
+    if (widget.expanded &&
+        !_reportedExpanded &&
+        _x!.isDone(t) &&
+        _y!.isDone(t)) {
+      _reportedExpanded = true;
+      final callback = widget.onExpanded;
+      // Eager spring sampling can happen during the parent's build.
+      if (eager) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && widget.expanded) callback?.call();
+        });
+      } else {
+        callback?.call();
+      }
+    }
   }
 
   @override
   void didUpdateWidget(covariant SpringPuck oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final newMotion = oldWidget.motionClock != widget.motionClock;
+    if (newMotion || oldWidget.expanded != widget.expanded) {
+      _reportedExpanded = false;
+    }
+    if (oldWidget.curves != widget.curves) oldWidget.curves?.remove(this);
     if (oldWidget.showRopes != widget.showRopes) {
       _rope = null;
       if (!widget.showRopes) widget.cables.remove(this);
     }
-    if (_prepared &&
-        (oldWidget.target != widget.target ||
-            oldWidget.expanded != widget.expanded ||
-            oldWidget.origin != widget.origin ||
-            oldWidget.showRopes != widget.showRopes)) {
-      _retarget();
+    if (newMotion ||
+        oldWidget.target != widget.target ||
+        oldWidget.expanded != widget.expanded ||
+        oldWidget.origin != widget.origin ||
+        oldWidget.showRopes != widget.showRopes) {
+      if (newMotion || oldWidget.expanded != widget.expanded) {
+        _scheduleRetarget();
+      } else if (_delayTimer == null) {
+        _retarget();
+      }
     }
   }
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
+    widget.curves?.remove(this);
     widget.cables.remove(this);
     _ticker.dispose();
     super.dispose();
@@ -168,6 +284,12 @@ class _SpringPuckState extends State<SpringPuck>
   @override
   Widget build(BuildContext context) {
     final position = _visiblePosition;
+    widget.curves?.update(
+      this,
+      bounds: position & Size.square(widget.diameter),
+      level: widget.level,
+      order: widget.order,
+    );
     if (widget.showRopes) {
       widget.cables.update(
         this,

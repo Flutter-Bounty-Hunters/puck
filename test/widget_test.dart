@@ -3,26 +3,94 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:puck/puck.dart';
 
 void main() {
-  const puckKey = ValueKey('puck');
-  Future<void> mount(WidgetTester tester, {VoidCallback? onTap}) async {
+  testWidgets('independent menu layers pass background touches through', (
+    tester,
+  ) async {
+    var pageTaps = 0;
+    var itemTaps = 0;
     await tester.pumpWidget(
       MaterialApp(
-        home: PuckOverlay(
-          onTap: onTap,
-          puck: const ColoredBox(key: puckKey, color: Colors.blue),
-          child: const SizedBox.expand(),
+        home: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => pageTaps++,
+                child: const ColoredBox(color: Colors.white),
+              ),
+            ),
+            for (final edge in PuckEdge.values)
+              Positioned.fill(
+                child: PuckMenu.singleLevel(
+                  key: ValueKey(edge),
+                  layout: PuckMenuLayout(initialEdge: edge),
+                  rootPuck: ColoredBox(
+                    key: ValueKey('root-$edge'),
+                    color: Colors.blue,
+                  ),
+                  puckItems: [
+                    GestureDetector(
+                      key: ValueKey('item-$edge'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => itemTaps++,
+                      child: const ColoredBox(color: Colors.green),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+    await tester.tapAt(const Offset(400, 100));
+    expect(pageTaps, 1);
+    for (final edge in PuckEdge.values) {
+      expect(
+        find.ancestor(
+          of: find.byKey(ValueKey(edge)),
+          matching: find.byType(PuckMenu),
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.byKey(ValueKey('root-$edge')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ValueKey('item-$edge')));
+    }
+    expect(itemTaps, 2);
+    expect(pageTaps, 1);
+    await tester.tapAt(const Offset(400, 100));
+    expect(pageTaps, 2);
+  });
+
+  const puckKey = ValueKey('puck');
+  Future<void> mount(
+    WidgetTester tester, {
+    PuckMenuController? controller,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PuckMenu.singleLevel(
+          puckItems: const [],
+          controller: controller,
+          rootPuck: const ColoredBox(key: puckKey, color: Colors.blue),
         ),
       ),
     );
   }
 
-  testWidgets('starts 10 percent offscreen and handles taps', (tester) async {
-    var taps = 0;
-    await mount(tester, onTap: () => taps++);
+  testWidgets('starts 10 percent offscreen and root taps toggle the menu', (
+    tester,
+  ) async {
+    final controller = PuckMenuController();
+    addTearDown(controller.dispose);
+    await mount(tester, controller: controller);
     expect(tester.getTopLeft(find.byKey(puckKey)).dx, closeTo(742.4, 0.01));
     await tester.tap(find.byKey(puckKey));
     await tester.pumpAndSettle();
-    expect(taps, 1);
+    expect(controller.status, PuckMenuStatus.expanded);
+    await tester.tap(find.byKey(puckKey));
+    await tester.pumpAndSettle();
+    expect(controller.status, PuckMenuStatus.collapsed);
   });
 
   testWidgets('drag releases to nearest left edge', (tester) async {

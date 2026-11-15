@@ -14,9 +14,9 @@ void main() {
   testWidgets('anchor visualizer is disabled by default', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: PuckOverlay(
-          puck: ColoredBox(color: Colors.blue),
-          child: SizedBox(),
+        home: PuckMenu.singleLevel(
+          puckItems: [],
+          rootPuck: ColoredBox(color: Colors.blue),
         ),
       ),
     );
@@ -30,11 +30,10 @@ void main() {
     const itemKey = ValueKey('item');
     await tester.pumpWidget(
       const MaterialApp(
-        home: PuckOverlay(
-          showDebugAnchors: true,
-          puck: ColoredBox(key: mainKey, color: Colors.blue),
-          menuItems: [ColoredBox(key: itemKey, color: Colors.green)],
-          child: SizedBox(),
+        home: PuckMenu.singleLevel(
+          debug: PuckMenuDebug(showAnchors: true),
+          rootPuck: ColoredBox(key: mainKey, color: Colors.blue),
+          puckItems: [ColoredBox(key: itemKey, color: Colors.green)],
         ),
       ),
     );
@@ -47,6 +46,12 @@ void main() {
     await tester.pump();
     final targets = _painter(tester).anchors;
     expect(targets, hasLength(2));
+    expect(_painter(tester).radii, [112]);
+    expect(_painter(tester).center, tester.getCenter(find.byKey(mainKey)));
+    expect(
+      (targets[1] - _painter(tester).center).distance,
+      closeTo(112, 0.001),
+    );
     // The dot immediately marks the destination, rather than following the
     // item during its spring animation.
     expect(
@@ -66,5 +71,6 @@ void main() {
     await tester.tap(find.byKey(mainKey));
     await tester.pumpAndSettle();
     expect(_painter(tester).anchors, hasLength(1));
+    expect(_painter(tester).radii, isEmpty);
   });
 }
