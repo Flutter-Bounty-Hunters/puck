@@ -10,118 +10,85 @@ import 'puck_opening_trace.dart';
 import 'puck_tier_curves.dart';
 import 'puck_cables.dart';
 import 'puck_rope_style.dart';
+import 'puck_menu_debug.dart';
+import 'puck_menu_layout.dart';
 import 'puck_anchor_painter.dart';
 import 'puck_layout_preview_painter.dart';
 
-/// The horizontal edge to which a puck docks.
-enum PuckEdge { left, right }
+part 'puck_menu_controller.dart';
 
 enum _MenuPhase { closed, expanded, collapsing }
 
-/// Places a draggable circular [puck] above [child].
+/// A self-contained layer displaying a draggable [rootPuck] and its menu items.
 ///
+/// Place above page content in a Stack, typically using Positioned.fill.
 /// Requires bounded constraints. Wrap this widget in [SafeArea] to make safe
-/// area insets collision boundaries. Only the puck intercepts pointer events.
+/// area insets collision boundaries. Only the root and menu items intercept
+/// pointer events; the rest of the layer lets touches reach content underneath.
 /// Ten percent of its diameter extends beyond the horizontal edge when docked.
-class PuckOverlay extends StatefulWidget {
-  const PuckOverlay({
+class PuckMenu extends StatefulWidget {
+  /// Creates a menu with one level of items.
+  const PuckMenu.singleLevel({
     super.key,
-    required this.puck,
-    required this.child,
-    this.diameter = 64,
-    this.offscreenFraction = 0.1,
-    this.initialEdge = PuckEdge.right,
-    this.initialVerticalAlignment = 0.5,
-    this.onTap,
-    this.onLongPress,
-    this.showDebugAnchors = false,
+    this.controller,
+    required this.rootPuck,
+    required List<Widget> puckItems,
+    this.layout = const PuckMenuLayout(),
     this.showRopes = false,
-    this.showTierCurves = false,
-    this.layoutPreview = false,
     this.ropeStyle = const PuckRopeStyle(),
-    this.menuItems = const [],
-    this.menuTiers = const [],
-    this.menuRadius = 112,
-    this.menuItemDiameter = 48,
-    this.maintainMenuState = false,
-    this.menuTierBuilder,
-    this.menuExpanded,
-  }) : assert(diameter > 0 && diameter < double.infinity),
-       assert(offscreenFraction >= 0 && offscreenFraction <= 0.5),
-       assert(initialVerticalAlignment >= 0 && initialVerticalAlignment <= 1),
-       assert(menuRadius > 0 && menuRadius < double.infinity),
-       assert(menuItemDiameter > 0 && menuItemDiameter < double.infinity);
+    this.debug = const PuckMenuDebug(),
+  }) : _singleLevelItems = puckItems,
+       _multiLevelItems = null;
 
-  /// Developer-provided content, clipped to a circle of [diameter].
-  final Widget puck;
-  final Widget child;
-  final double diameter;
+  /// Creates a menu with lists ordered from the nearest to farthest level.
+  const PuckMenu.multiLevel({
+    super.key,
+    this.controller,
+    required this.rootPuck,
+    required List<List<Widget>> puckItems,
+    this.layout = const PuckMenuLayout(),
+    this.showRopes = false,
+    this.ropeStyle = const PuckRopeStyle(),
+    this.debug = const PuckMenuDebug(),
+  }) : _singleLevelItems = null,
+       _multiLevelItems = puckItems;
 
-  /// Fraction of the diameter hidden beyond the docking edge.
-  final double offscreenFraction;
-  final PuckEdge initialEdge;
+  /// External commands and lifecycle notifications for this menu.
+  /// The caller owns and disposes the controller.
+  final PuckMenuController? controller;
 
-  /// Initial vertical position: zero is the top, one is the bottom.
-  final double initialVerticalAlignment;
-  final VoidCallback? onTap;
+  /// Developer-provided content, clipped to [PuckMenuLayout.diameter].
+  final Widget rootPuck;
 
-  /// Called when the main puck is long-pressed.
-  final VoidCallback? onLongPress;
+  /// Menu contents grouped into levels ordered nearest to farthest.
+  ///
+  /// [PuckMenu.singleLevel] accepts a flat list and exposes it here as one level;
+  /// [PuckMenu.multiLevel] accepts the grouped lists directly. Give items stable,
+  /// unique keys. Empty levels are ignored during layout. Levels launch 50ms
+  /// apart, outside-in on opening and inside-out on closing.
+  List<List<Widget>> get puckItems => _multiLevelItems ?? [_singleLevelItems!];
 
-  /// Paint menu tier perimeters, their shared end caps, and red destination dots. During dragging the
-  /// main anchor follows the puck; during docking it shows its final position.
-  /// Menu anchors appear only while their pucks are mounted.
-  final bool showDebugAnchors;
+  /// Menu sizing, level geometry, docking, and initial root placement.
+  final PuckMenuLayout layout;
 
   /// Connect menu items to their parent with animated ropes. Off by default.
   /// Disabled ropes are neither painted nor simulated.
   final bool showRopes;
 
-  /// Draw circular curves through each tier's live item centers, clipped around
-  /// all pucks. Curves follow the springs and fade near the root. Off by default.
-  final bool showTierCurves;
-
-  /// Replace menu items and their springs with radius guides, item-width bands,
-  /// and filled sectors for the solved arc. Uses the same layout rules.
-  final bool layoutPreview;
-
   /// Stroke width and colors for ropes when [showRopes] is enabled.
   final PuckRopeStyle ropeStyle;
 
-  /// Circular menu contents, painted below the main puck. Supply interactive
-  /// widgets (for example, buttons) to handle individual item selections.
-  /// Give items stable keys when inserting or reordering them.
-  final List<Widget> menuItems;
+  /// Visual diagnostics for anchors, level curves, and layout exploration.
+  final PuckMenuDebug debug;
 
-  /// Menu tiers ordered from nearest to farthest. Empty tiers are ignored.
-  /// Supply either this or [menuItems]. Items should have stable, unique keys.
-  /// Tiers launch 50ms apart, outside-in on opening and inside-out on closing.
-  final List<List<Widget>> menuTiers;
-
-  /// Preferred distance from the main puck center to the expanded menu item centers.
-  final double menuRadius;
-  final double menuItemDiameter;
-
-  /// Keep item subtrees mounted offstage when closed. Useful for
-  /// expensive content such as glass renderers. Hidden items do not paint.
-  /// Defaults to false, which disposes collapsed item subtrees.
-  final bool maintainMenuState;
-
-  /// Wrap a tier's positioned items (already in a Stack) in a rendering layer.
-  /// The wrapper receives the same bounds as this overlay. It must preserve
-  /// those coordinates. Tier indices run from nearest to farthest.
-  final Widget Function(BuildContext context, int tier, Widget child)?
-  menuTierBuilder;
-
-  /// Optional externally controlled expanded state. Root taps update its value;
-  /// programmatic changes do not invoke [onTap]. Owned by the caller.
-  final ValueNotifier<bool>? menuExpanded;
+  final List<Widget>? _singleLevelItems;
+  final List<List<Widget>>? _multiLevelItems;
 
   @override
-  State<PuckOverlay> createState() => _PuckOverlayState();
+  State<PuckMenu> createState() => _PuckMenuState();
 }
 
-class _PuckOverlayState extends State<PuckOverlay>
+class _PuckMenuState extends State<PuckMenu>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final Ticker _ticker = createTicker(_tick);
   final _cables = PuckCables();
@@ -139,10 +106,35 @@ class _PuckOverlayState extends State<PuckOverlay>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _menuPhase = widget.menuExpanded?.value == true
-        ? _MenuPhase.expanded
-        : _MenuPhase.closed;
-    widget.menuExpanded?.addListener(_syncExpanded);
+    _attachController();
+    if (widget.controller != null) {
+      _applyControllerRequestAfterBuild();
+    }
+  }
+
+  void _attachController() {
+    final controller = widget.controller;
+    if (controller == null) return;
+    controller._attach(this, _setExpanded);
+    controller._status = _expanded
+        ? (_opening ? PuckMenuStatus.expanding : PuckMenuStatus.expanded)
+        : (_menuPhase == _MenuPhase.collapsing
+              ? PuckMenuStatus.collapsing
+              : PuckMenuStatus.collapsed);
+    controller._isDragging = _dragging;
+    controller._isSettled = !_awaitingSettle;
+  }
+
+  void _applyControllerRequestAfterBuild() {
+    final controller = widget.controller;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          identical(widget.controller, controller) &&
+          controller != null &&
+          !controller._disposed) {
+        _setExpanded(controller._requestedExpanded);
+      }
+    });
   }
 
   @override
@@ -164,27 +156,32 @@ class _PuckOverlayState extends State<PuckOverlay>
   Offset? _grabOffset;
   SpringSimulation? _horizontal;
   FrictionSimulation? _vertical;
-  late PuckEdge _edge = widget.initialEdge;
+  late PuckEdge _edge = widget.layout.initialEdge;
   double _targetX = 0;
   _MenuPhase _menuPhase = _MenuPhase.closed;
   bool get _expanded => _menuPhase == _MenuPhase.expanded;
   final Set<Object> _pendingCollapse = {};
+  final Set<Object> _pendingExpansion = {};
+  bool _opening = false;
+  bool _dragging = false;
+  bool _awaitingSettle = false;
   int _menuGeneration = 0;
+  int _completedGeneration = 0;
   Stopwatch? _menuMotionClock;
 
-  List<List<Widget>> get _tiers => widget.menuTiers.isEmpty
-      ? [widget.menuItems]
-      : widget.menuTiers.where((tier) => tier.isNotEmpty).toList();
+  List<List<Widget>> get _tiers => widget._multiLevelItems == null
+      ? widget.puckItems
+      : widget.puckItems.where((tier) => tier.isNotEmpty).toList();
   List<Widget> get _items => _tiers.expand((tier) => tier).toList();
 
-  double get _left => -widget.diameter * widget.offscreenFraction;
-  double get _right => math.max(_left, _size!.width - widget.diameter - _left);
-  double get _bottom => math.max(0, _size!.height - widget.diameter);
+  double get _left => -widget.layout.diameter * widget.layout.offscreenFraction;
+  double get _right =>
+      math.max(_left, _size!.width - widget.layout.diameter - _left);
+  double get _bottom => math.max(0, _size!.height - widget.layout.diameter);
 
   // Item targets use the stable docking destination. The layout preview shows
   // geometry at the moving root, including throughout its return spring.
-  Offset get _menuPosition =>
-      !widget.layoutPreview && _tiers.length > 1 && _ticker.isActive
+  Offset get _menuPosition => !widget.debug.layoutPreview && _ticker.isActive
       ? Offset(
           _targetX,
           (_returnTargetY ?? _vertical!.finalX).clamp(0, _bottom),
@@ -200,6 +197,7 @@ class _PuckOverlayState extends State<PuckOverlay>
     final time = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
     final x = _horizontal!;
     final y = _returnSpring ?? _vertical!;
+    var settled = false;
     setState(() {
       _position = _constrainVertical(Offset(x.x(time), y.x(time)));
       // Contact with a vertical boundary absorbs vertical momentum.
@@ -213,18 +211,23 @@ class _PuckOverlayState extends State<PuckOverlay>
         _returnSpring = null;
         _returnTargetY = null;
         _ticker.stop();
+        settled = _awaitingSettle;
+        _awaitingSettle = false;
       }
     });
+    if (settled) widget.controller?._settled();
   }
 
   void _dock(Offset velocity) {
+    final released = _dragging;
+    _dragging = false;
     _grabOffset = null;
     _ticker.stop();
     _returnSpring = null;
     _returnTargetY = null;
     // Momentum carries the puck vertically, while the nearest horizontal edge
     // attracts it. Horizontal release velocity feeds directly into the spring.
-    _edge = (_position.dx + widget.diameter / 2 < _size!.width / 2)
+    _edge = (_position.dx + widget.layout.diameter / 2 < _size!.width / 2)
         ? PuckEdge.left
         : PuckEdge.right;
     _targetX = _edge == PuckEdge.left ? _left : _right;
@@ -246,15 +249,19 @@ class _PuckOverlayState extends State<PuckOverlay>
         velocity.dy,
       );
     }
+    _awaitingSettle =
+        _awaitingSettle ||
+        (_position.dx - _targetX).abs() > 0.01 ||
+        velocity.distance > 0.01 ||
+        _returnSpring != null;
+    if (_awaitingSettle) widget.controller?._isSettled = false;
     _ticker.start();
+    if (released) widget.controller?._dragReleased();
   }
-
-  void _syncExpanded() => _setExpanded(widget.menuExpanded!.value);
 
   void _toggleMenu() {
     PuckOpeningTrace.measure('tap.callback', () {
       _setExpanded(!_expanded);
-      widget.onTap?.call();
     });
   }
 
@@ -265,8 +272,10 @@ class _PuckOverlayState extends State<PuckOverlay>
       _menuMotionClock = WidgetsBinding.instance.samplingClock.stopwatch()
         ..start();
       _pendingCollapse.clear();
+      _pendingExpansion.clear();
+      _opening = expanded;
       if (!expanded) {
-        if (!widget.layoutPreview) {
+        if (!widget.debug.layoutPreview) {
           _pendingCollapse.addAll([
             for (var i = 0; i < _items.length; i++) _items[i].key ?? i,
           ]);
@@ -276,9 +285,42 @@ class _PuckOverlayState extends State<PuckOverlay>
             : _MenuPhase.collapsing;
       } else {
         _menuPhase = _MenuPhase.expanded;
+        if (!widget.debug.layoutPreview) {
+          _pendingExpansion.addAll([
+            for (var i = 0; i < _items.length; i++) _items[i].key ?? i,
+          ]);
+        }
       }
     });
-    widget.menuExpanded?.value = expanded;
+    final generation = _menuGeneration;
+    if (expanded) {
+      widget.controller?._expanding();
+    } else {
+      widget.controller?._collapsing();
+    }
+    _finishMenuTransition(generation);
+  }
+
+  void _finishMenuTransition(int generation) {
+    if (!mounted ||
+        generation != _menuGeneration ||
+        generation == _completedGeneration) {
+      return;
+    }
+    if (_expanded && _opening && _pendingExpansion.isEmpty) {
+      _opening = false;
+      _completedGeneration = generation;
+      widget.controller?._expanded();
+    } else if (_menuPhase == _MenuPhase.closed) {
+      _completedGeneration = generation;
+      widget.controller?._collapsed();
+    }
+  }
+
+  void _itemExpanded(Object identity, int generation) {
+    if (!_expanded || !_opening || generation != _menuGeneration) return;
+    _pendingExpansion.remove(identity);
+    _finishMenuTransition(generation);
   }
 
   void _itemCollapsed(Object identity, int generation) {
@@ -289,13 +331,12 @@ class _PuckOverlayState extends State<PuckOverlay>
       _pendingCollapse.remove(identity);
       if (_pendingCollapse.isEmpty) _menuPhase = _MenuPhase.closed;
     });
+    _finishMenuTransition(generation);
   }
 
-  // Multi-tier end caps can approach the wall without a large inward wedge.
-  double _menuInset(double itemDiameter) => math.min(
-    _tiers.length > 1 ? 4 : 24,
-    math.max(0, (_size!.width - itemDiameter) / 2),
-  );
+  // End caps can approach the wall without a large inward wedge.
+  double _menuInset(double itemDiameter) =>
+      math.min(4, math.max(0, (_size!.width - itemDiameter) / 2));
 
   // Exact visible arc on the inward semicircle for a given clear edge gap.
   // Splitting at circle/rectangle intersections also handles narrow containers.
@@ -369,7 +410,8 @@ class _PuckOverlayState extends State<PuckOverlay>
     int tier = 0,
   }) {
     final center =
-        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
+        _menuPosition +
+        Offset(widget.layout.diameter / 2, widget.layout.diameter / 2);
     final half = itemDiameter / 2;
     if (count == 0) return const [];
     // Maximize a shared clear gap: between circular item edges (chord distance)
@@ -412,7 +454,7 @@ class _PuckOverlayState extends State<PuckOverlay>
       first = _tierPhases[tier] ?? first;
     }
     _tierPhases[tier] = first;
-    return List.generate(count, (index) {
+    final points = List.generate(count, (index) {
       final angle = first + spacing * index;
       final point = center + Offset(math.cos(angle), math.sin(angle)) * radius;
       // If the requested perimeter cannot fit, prioritize visibility.
@@ -422,17 +464,27 @@ class _PuckOverlayState extends State<PuckOverlay>
         (point.dy - half).clamp(0, _size!.height - itemDiameter),
       );
     });
+    // Mirror the complete sequence when the fan changes sides. Individual
+    // items keep their neighbors along the arc; never sort by screen Y.
+    // A full ring has no facing side, so retain its direction across the seam.
+    final fullRing = end - start >= 2 * math.pi - 1e-8;
+    final reversed = fullRing
+        ? (_tierReversed[tier] ?? widget.layout.initialEdge == PuckEdge.right)
+        : math.cos((start + end) / 2) < 0;
+    _tierReversed[tier] = reversed;
+    return reversed ? points.reversed.toList() : points;
   }
 
   List<double> _menuRadii(double diameter) {
     final tiers = _tiers;
     if (tiers.length <= 1) {
-      return [widget.menuRadius];
+      return [widget.layout.levelRadius];
     }
     final center =
-        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
+        _menuPosition +
+        Offset(widget.layout.diameter / 2, widget.layout.diameter / 2);
     // Find the largest usable outer radius, including narrow and corner layouts.
-    var outer = widget.menuRadius;
+    var outer = widget.layout.levelRadius;
     final limit = _size!.longestSide * 1.4143;
     for (var radius = diameter; radius <= limit; radius += 2) {
       final arc = _menuArc(center, diameter / 2, 0, radius);
@@ -442,12 +494,12 @@ class _PuckOverlayState extends State<PuckOverlay>
         outer = radius;
       }
     }
-    final near = math.min(widget.menuRadius, outer / tiers.length);
+    final near = math.min(widget.layout.levelRadius, outer / tiers.length);
     // Increase each outward step beyond the preferred inner radius. Scale
     // all gaps together when the viewport requires compression.
     final gaps = [
       for (var tier = 1; tier < tiers.length; tier++)
-        math.max(widget.menuRadius, diameter) + 8 * tier,
+        math.max(widget.layout.levelRadius, diameter) + 8 * tier,
     ];
     final span = gaps.fold(0.0, (sum, gap) => sum + gap);
     final scale = math.min(1.0, (outer - near) / span);
@@ -467,7 +519,8 @@ class _PuckOverlayState extends State<PuckOverlay>
   }) {
     if (radii.isEmpty) return null;
     final center =
-        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
+        _menuPosition +
+        Offset(widget.layout.diameter / 2, widget.layout.diameter / 2);
     final half = diameter / 2;
     final inset = math.max(_menuInset(diameter), 4.0);
     final left = half + inset;
@@ -698,6 +751,7 @@ class _PuckOverlayState extends State<PuckOverlay>
   Object? _menuLayoutKey;
   List<double>? _restingRadii;
   final Map<int, double> _tierPhases = {};
+  final Map<int, bool> _tierReversed = {};
 
   (List<double>, (double, double)?) _menuLayout(double diameter) {
     final base = _baseMenuLayout(diameter);
@@ -706,7 +760,7 @@ class _PuckOverlayState extends State<PuckOverlay>
     if (arc == null ||
         resting == null ||
         base.$1.last >= resting.last - 1e-7 ||
-        (_grabOffset == null && !widget.layoutPreview)) {
+        (_grabOffset == null && !widget.debug.layoutPreview)) {
       return base;
     }
     final span = arc.$2 - arc.$1;
@@ -784,7 +838,8 @@ class _PuckOverlayState extends State<PuckOverlay>
     // Interpolated arcs stay in the same connected visible run. Limit the
     // outward movement analytically so every intermediate layout is safe.
     final center =
-        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
+        _menuPosition +
+        Offset(widget.layout.diameter / 2, widget.layout.diameter / 2);
     final half = diameter / 2;
     final bounds = Rect.fromLTRB(
       half + math.max(_menuInset(diameter), 4.0),
@@ -821,14 +876,14 @@ class _PuckOverlayState extends State<PuckOverlay>
     final arc = base.$2;
     final resting = _restingRadii;
     if (!_expanded ||
-        _tiers.length <= 1 ||
         arc == null ||
         resting == null ||
         arc.$2 - arc.$1 < math.pi - 1e-7) {
       return base;
     }
     final center =
-        _menuPosition + Offset(widget.diameter / 2, widget.diameter / 2);
+        _menuPosition +
+        Offset(widget.layout.diameter / 2, widget.layout.diameter / 2);
     final half = diameter / 2;
     final inset = math.max(_menuInset(diameter), 4.0);
     final bounds = Rect.fromLTRB(
@@ -867,23 +922,20 @@ class _PuckOverlayState extends State<PuckOverlay>
     if (!_expanded) {
       _menuLayoutKey = null;
       _tierPhases.clear();
+      _tierReversed.clear();
       return (const [], null);
-    }
-    if (_tiers.length <= 1) {
-      _menuLayoutKey = null;
-      return (_menuRadii(diameter), null);
     }
     final key = (
       _size,
       diameter,
-      widget.diameter,
-      widget.menuRadius,
+      widget.layout.diameter,
+      widget.layout.levelRadius,
       _tiers.map((tier) => tier.length).join(','),
     );
     if (_menuLayoutKey != key) {
       _menuLayoutKey = key;
       _restingRadii = _menuRadii(diameter);
-      if (!widget.layoutPreview) {
+      if (!widget.debug.layoutPreview) {
         return (_restingRadii!, _sharedMenuArc(diameter, _restingRadii!));
       }
     }
@@ -891,7 +943,7 @@ class _PuckOverlayState extends State<PuckOverlay>
     // Real items target the final dock and can use its resting radii. The
     // preview follows the moving root, so it must keep solving for available
     // space throughout docking instead of forcing a radius reset on release.
-    if (_grabOffset == null && !widget.layoutPreview) {
+    if (_grabOffset == null && !widget.debug.layoutPreview) {
       final arc = _sharedMenuArc(diameter, resting);
       if (arc != null) {
         return (resting, arc);
@@ -980,29 +1032,43 @@ class _PuckOverlayState extends State<PuckOverlay>
   }
 
   @override
-  void didUpdateWidget(covariant PuckOverlay oldWidget) {
+  void didUpdateWidget(covariant PuckMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.menuExpanded != widget.menuExpanded) {
-      oldWidget.menuExpanded?.removeListener(_syncExpanded);
-      widget.menuExpanded?.addListener(_syncExpanded);
-      if (widget.menuExpanded != null) _syncExpanded();
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(this);
+      _attachController();
+      _applyControllerRequestAfterBuild();
     }
-    if (_menuPhase == _MenuPhase.collapsing) {
-      if (widget.layoutPreview) _pendingCollapse.clear();
+    if (_menuPhase == _MenuPhase.collapsing || _opening) {
+      if (widget.debug.layoutPreview) _pendingCollapse.clear();
       final identities = {
         for (var i = 0; i < _items.length; i++) _items[i].key ?? i,
       };
       _pendingCollapse.retainAll(identities);
-      if (_pendingCollapse.isEmpty) _menuPhase = _MenuPhase.closed;
+      _pendingExpansion.retainAll(identities);
+      if (_opening) {
+        final oldItems = oldWidget.puckItems.expand((tier) => tier).toList();
+        final oldIdentities = {
+          for (var i = 0; i < oldItems.length; i++) oldItems[i].key ?? i,
+        };
+        _pendingExpansion.addAll(identities.difference(oldIdentities));
+      }
+      if (_menuPhase == _MenuPhase.collapsing && _pendingCollapse.isEmpty) {
+        _menuPhase = _MenuPhase.closed;
+      }
+      final generation = _menuGeneration;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _finishMenuTransition(generation);
+      });
     }
     _geometryChanged =
-        oldWidget.diameter != widget.diameter ||
-        oldWidget.offscreenFraction != widget.offscreenFraction;
+        oldWidget.layout.diameter != widget.layout.diameter ||
+        oldWidget.layout.offscreenFraction != widget.layout.offscreenFraction;
   }
 
   @override
   void dispose() {
-    widget.menuExpanded?.removeListener(_syncExpanded);
+    widget.controller?._detach(this);
     WidgetsBinding.instance.removeObserver(this);
     _curves.dispose();
     _cables.dispose();
@@ -1012,15 +1078,11 @@ class _PuckOverlayState extends State<PuckOverlay>
 
   @override
   Widget build(BuildContext context) {
-    assert(
-      widget.menuItems.isEmpty || widget.menuTiers.isEmpty,
-      'Supply either menuItems or menuTiers.',
-    );
     return LayoutBuilder(
       builder: (context, constraints) {
         assert(
           constraints.hasBoundedWidth && constraints.hasBoundedHeight,
-          'PuckOverlay requires bounded width and height.',
+          'PuckMenu requires bounded width and height.',
         );
         WidgetsBinding.instance.addPostFrameCallback(_measureGlobalTop);
         final view = View.of(context);
@@ -1038,7 +1100,7 @@ class _PuckOverlayState extends State<PuckOverlay>
         if (_keyboardHeight == 0 && keyboard > 0) {
           _draggedWithKeyboard = false;
         }
-        final newBottom = math.max(0.0, size.height - widget.diameter);
+        final newBottom = math.max(0.0, size.height - widget.layout.diameter);
         if (keyboard > 0 &&
             !_draggedWithKeyboard &&
             _keyboardOriginalY == null &&
@@ -1053,27 +1115,46 @@ class _PuckOverlayState extends State<PuckOverlay>
         _keyboardHeight = keyboard;
         final firstLayout = _size == null;
         if (_size != size || _geometryChanged) {
+          final horizontalGeometryChanged =
+              firstLayout || _size!.width != size.width || _geometryChanged;
           _geometryChanged = false;
-          _ticker.stop();
+          if (horizontalGeometryChanged) {
+            _ticker.stop();
+            // A resize places the root directly on its new anchor.
+            if (_awaitingSettle && !_dragging) {
+              _awaitingSettle = false;
+              final controller = widget.controller;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted &&
+                    !_awaitingSettle &&
+                    !_dragging &&
+                    identical(widget.controller, controller)) {
+                  controller?._settled();
+                }
+              });
+            }
+          }
           _size = size;
           _position = Offset(
-            _edge == PuckEdge.left ? _left : _right,
+            horizontalGeometryChanged
+                ? (_edge == PuckEdge.left ? _left : _right)
+                : _position.dx,
             firstLayout
-                ? _bottom * widget.initialVerticalAlignment
+                ? _bottom * widget.layout.initialVerticalAlignment
                 : _position.dy.clamp(0, _bottom),
           );
         }
         _position = _constrainVertical(_position);
         if (restore) _dock(Offset.zero);
         final itemDiameter = math.min(
-          widget.menuItemDiameter,
+          widget.layout.puckDiameter,
           math.min(size.width, size.height),
         );
         final origin =
             _position +
             Offset(
-              (widget.diameter - itemDiameter) / 2,
-              (widget.diameter - itemDiameter) / 2,
+              (widget.layout.diameter - itemDiameter) / 2,
+              (widget.layout.diameter - itemDiameter) / 2,
             );
         final items = _items;
         final generation = _menuGeneration;
@@ -1088,7 +1169,8 @@ class _PuckOverlayState extends State<PuckOverlay>
           () => _menuLayout(itemDiameter),
         );
         final targets =
-            _expanded && (!widget.layoutPreview || widget.showDebugAnchors)
+            _expanded &&
+                (!widget.debug.layoutPreview || widget.debug.showAnchors)
             ? PuckOpeningTrace.measure(
                 'menu.targets',
                 () => _menuTargets(itemDiameter, radii, arc),
@@ -1099,36 +1181,34 @@ class _PuckOverlayState extends State<PuckOverlay>
           _curves.fullCircle =
               arc != null && arc.$2 - arc.$1 >= 2 * math.pi - 1e-8;
         }
-        final menuPucks = <int, Widget>{
-          if (!widget.layoutPreview)
+        final menuPucks = <Widget>[
+          if (!widget.debug.layoutPreview && _menuPhase != _MenuPhase.closed)
             for (var i = 0; i < items.length; i++)
-              if (widget.maintainMenuState ||
-                  (_menuPhase != _MenuPhase.closed &&
-                      (_expanded ||
-                          _pendingCollapse.contains(items[i].key ?? i))))
-                i: SpringPuck(
+              if (_expanded || _pendingCollapse.contains(items[i].key ?? i))
+                SpringPuck(
                   key: ValueKey(items[i].key ?? i),
                   origin: origin,
                   delay: _tierDelay(i),
                   motionClock: _menuMotionClock,
                   cables: _cables,
                   showRopes: widget.showRopes,
-                  curves: widget.showTierCurves ? _curves : null,
+                  curves: widget.debug.showLevelCurves ? _curves : null,
                   tier: itemTiers[i],
                   order: i,
-                  dormant: _menuPhase == _MenuPhase.closed,
                   target: _expanded ? targets[i] : origin,
                   diameter: itemDiameter,
-                  parentDiameter: widget.diameter,
+                  parentDiameter: widget.layout.diameter,
                   bounds: size,
                   horizontalInset: _menuInset(itemDiameter),
                   expanded: _expanded,
                   onCollapsed: () =>
                       _itemCollapsed(items[i].key ?? i, generation),
+                  onExpanded: () =>
+                      _itemExpanded(items[i].key ?? i, generation),
                   child: items[i],
                 ),
-        };
-        final menuLayers = widget.layoutPreview
+        ];
+        final menuWidgets = widget.debug.layoutPreview
             ? <Widget>[
                 if (_expanded)
                   Positioned.fill(
@@ -1137,7 +1217,10 @@ class _PuckOverlayState extends State<PuckOverlay>
                         painter: PuckLayoutPreviewPainter(
                           center:
                               _menuPosition +
-                              Offset(widget.diameter / 2, widget.diameter / 2),
+                              Offset(
+                                widget.layout.diameter / 2,
+                                widget.layout.diameter / 2,
+                              ),
                           radii: radii,
                           itemDiameter: itemDiameter,
                           arc: arc,
@@ -1146,38 +1229,20 @@ class _PuckOverlayState extends State<PuckOverlay>
                     ),
                   ),
               ]
-            : widget.menuTierBuilder == null
-            ? menuPucks.values.toList()
-            : <Widget>[
-                for (var tier = 0; tier < tiers.length; tier++)
-                  Positioned.fill(
-                    key: ValueKey(('menu-tier', tier)),
-                    child: widget.menuTierBuilder!(
-                      context,
-                      tier,
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          for (final entry in menuPucks.entries)
-                            if (itemTiers[entry.key] == tier) entry.value,
-                        ],
-                      ),
-                    ),
-                  ),
-              ];
+            : menuPucks;
         return Stack(
           clipBehavior: Clip.hardEdge,
           fit: StackFit.expand,
           children: [
-            widget.child,
-            if (widget.showTierCurves && !widget.layoutPreview)
+            if (widget.debug.showLevelCurves && !widget.debug.layoutPreview)
               Positioned.fill(
                 child: IgnorePointer(
                   child: RepaintBoundary(
                     child: CustomPaint(
                       painter: PuckTierCurvePainter(
                         _curves,
-                        parentBounds: _position & Size.square(widget.diameter),
+                        parentBounds:
+                            _position & Size.square(widget.layout.diameter),
                         color: Theme.brightnessOf(context) == Brightness.dark
                             ? const Color(0xFF424242)
                             : const Color(0xFFD1D5DB),
@@ -1186,34 +1251,39 @@ class _PuckOverlayState extends State<PuckOverlay>
                   ),
                 ),
               ),
-            if (widget.showRopes && !widget.layoutPreview)
+            if (widget.showRopes && !widget.debug.layoutPreview)
               Positioned.fill(
                 child: IgnorePointer(
                   child: CustomPaint(
                     painter: PuckCablePainter(
                       _cables,
                       style: widget.ropeStyle,
-                      parentBounds: _position & Size.square(widget.diameter),
+                      parentBounds:
+                          _position & Size.square(widget.layout.diameter),
                     ),
                   ),
                 ),
               ),
-            ...menuLayers,
+            ...menuWidgets,
             // Paint the parent after every menu item, including while their
             // springs overlap it during expansion and collapse.
             Positioned(
               left: _position.dx,
               top: _position.dy,
-              width: widget.diameter,
-              height: widget.diameter,
+              width: widget.layout.diameter,
+              height: widget.layout.diameter,
               child: ClipOval(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: _toggleMenu,
-                  onLongPress: widget.onLongPress,
                   onPanDown: (details) {
                     _ticker.stop();
                     _grabOffset = details.localPosition;
+                  },
+                  onPanStart: (_) {
+                    _dragging = true;
+                    _awaitingSettle = true;
+                    widget.controller?._dragStarted();
                   },
                   onPanUpdate: (details) {
                     // A deliberate drag supersedes the pre-keyboard location.
@@ -1236,11 +1306,11 @@ class _PuckOverlayState extends State<PuckOverlay>
                     'tap.up.dock',
                     () => _dock(Offset.zero),
                   ),
-                  child: widget.puck,
+                  child: widget.rootPuck,
                 ),
               ),
             ),
-            if (widget.showDebugAnchors)
+            if (widget.debug.showAnchors)
               Positioned.fill(
                 child: IgnorePointer(
                   child: CustomPaint(
@@ -1255,7 +1325,10 @@ class _PuckOverlayState extends State<PuckOverlay>
                                     ),
                                   )
                                 : _position) +
-                            Offset(widget.diameter / 2, widget.diameter / 2),
+                            Offset(
+                              widget.layout.diameter / 2,
+                              widget.layout.diameter / 2,
+                            ),
                         for (var i = 0; i < items.length; i++)
                           if (_menuPhase != _MenuPhase.closed &&
                               (_expanded ||
@@ -1265,7 +1338,10 @@ class _PuckOverlayState extends State<PuckOverlay>
                       ],
                       center:
                           _menuPosition +
-                          Offset(widget.diameter / 2, widget.diameter / 2),
+                          Offset(
+                            widget.layout.diameter / 2,
+                            widget.layout.diameter / 2,
+                          ),
                       radii: items.isEmpty ? const [] : radii,
                       arc: arc,
                     ),

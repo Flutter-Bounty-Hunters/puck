@@ -6,6 +6,39 @@ void main() {
   const parent = ValueKey('parent');
   const item = ValueKey('item');
 
+  testWidgets('a fitting dragged root stays put as keyboard metrics change', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 800);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: PuckMenu.singleLevel(
+            puckItems: [],
+            rootPuck: ColoredBox(key: parent, color: Colors.blue),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(parent)),
+    );
+    await gesture.moveBy(const Offset(-150, -100));
+    await tester.pump();
+    final position = tester.getTopLeft(find.byKey(parent));
+    for (final inset in [100.0, 200.0, 300.0, 0.0]) {
+      tester.view.viewInsets = FakeViewPadding(bottom: inset);
+      await tester.pump();
+      expect(tester.getTopLeft(find.byKey(parent)), position);
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
   for (final resize in [false, true]) {
     for (final drag in [false, true]) {
       testWidgets('keyboard restores with a spring unless dragged '
@@ -20,11 +53,10 @@ void main() {
             home: Scaffold(
               resizeToAvoidBottomInset: resize,
               appBar: AppBar(title: const Text('Keyboard return')),
-              body: const PuckOverlay(
-                initialVerticalAlignment: 0.9,
-                puck: ColoredBox(key: parent, color: Colors.blue),
-                menuItems: [ColoredBox(key: item, color: Colors.green)],
-                child: SizedBox.expand(),
+              body: const PuckMenu.singleLevel(
+                layout: PuckMenuLayout(initialVerticalAlignment: 0.9),
+                rootPuck: ColoredBox(key: parent, color: Colors.blue),
+                puckItems: [ColoredBox(key: item, color: Colors.green)],
               ),
             ),
           ),
@@ -89,11 +121,10 @@ void main() {
               resizeToAvoidBottomInset: resize,
               appBar: AppBar(title: const Text('Keyboard boundary')),
               body: const SafeArea(
-                child: PuckOverlay(
-                  initialVerticalAlignment: 1,
-                  puck: ColoredBox(key: parent, color: Colors.blue),
-                  menuItems: [ColoredBox(key: item, color: Colors.green)],
-                  child: SizedBox.expand(),
+                child: PuckMenu.singleLevel(
+                  layout: PuckMenuLayout(initialVerticalAlignment: 1),
+                  rootPuck: ColoredBox(key: parent, color: Colors.blue),
+                  puckItems: [ColoredBox(key: item, color: Colors.green)],
                 ),
               ),
             ),

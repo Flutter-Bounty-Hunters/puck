@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:puck/puck.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as glass;
 
-import 'prepared_menu_glass_layer.dart';
 import 'layout_demo.dart' show MenuLayoutDemo;
 
 const _demoTiers = [
@@ -48,7 +48,6 @@ const _chatContacts = [
 
 class PuckDemo extends StatefulWidget {
   const PuckDemo({super.key});
-
   @override
   State<PuckDemo> createState() => _PuckDemoState();
 }
@@ -57,9 +56,43 @@ class _PuckDemoState extends State<PuckDemo> {
   bool _showDebugAnchors = false;
   bool _darkMode = false;
   int _tabIndex = 0;
-  int _layoutReset = 0;
+  bool _layoutVisited = false;
   String? _selectedContact;
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+  final _keyboardFocus = FocusNode(debugLabel: 'Puck keyboard toggle');
+
+  @override
+  void initState() {
+    super.initState();
+    _keyboardFocus.addListener(_keyboardChanged);
+  }
+
+  void _keyboardChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _toggleKeyboard() {
+    if (_keyboardFocus.hasFocus) {
+      _keyboardFocus.unfocus();
+    } else {
+      _keyboardFocus.requestFocus();
+    }
+  }
+
+  void _selectTab(int index) {
+    _keyboardFocus.unfocus();
+    setState(() {
+      _tabIndex = index;
+      if (index == 1) _layoutVisited = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _keyboardFocus.removeListener(_keyboardChanged);
+    _keyboardFocus.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -104,6 +137,7 @@ class _PuckDemoState extends State<PuckDemo> {
     );
     return MaterialApp(
       title: 'Puck',
+      debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: _messengerKey,
       theme: ThemeData(colorSchemeSeed: Colors.indigo),
       darkTheme: ThemeData(
@@ -111,192 +145,246 @@ class _PuckDemoState extends State<PuckDemo> {
         brightness: Brightness.dark,
       ),
       themeMode: _darkMode || _tabIndex == 1 ? ThemeMode.dark : ThemeMode.light,
-      // Keep the menu above the Navigator, including its app bars and dialogs.
-      builder: (context, child) => Overlay.wrap(
-        child: Stack(
-          fit: StackFit.expand,
+      // The standalone tab widget loads its shaders on demand. Do not add
+      // initialization or shader warm-up ahead of the app's first frame.
+      builder: (context, child) => glass.LiquidGlassWidgets.wrap(
+        brightnessResolver: Theme.maybeBrightnessOf,
+        theme: glass.GlassThemeData.ios26(
+          brightness: _darkMode || _tabIndex == 1
+              ? Brightness.dark
+              : Brightness.light,
+        ),
+        child: child!,
+      ),
+      home: Scaffold(
+        extendBody: true,
+        resizeToAvoidBottomInset: false,
+        body: IndexedStack(
+          index: _tabIndex,
           children: [
-            child!,
-            IndexedStack(
-              index: _tabIndex,
-              children: [
-                TickerMode(
-                  enabled: _tabIndex == 0,
-                  child: SafeArea(
-                    child: PuckOverlay(
-                      key: const ValueKey('example-menu'),
-                      maintainMenuState: true,
-                      menuTierBuilder: (context, tier, child) =>
-                          PreparedMenuGlassLayer(
-                            settings: glassSettings,
-                            appearance: glassAppearance,
-                            itemCount: _demoTiers[tier].length,
-                            radius: 80.0 + 80 * tier + 4 * tier * (tier + 1),
-                            child: child,
-                          ),
-                      showRopes: false,
-                      showTierCurves: true,
-                      menuRadius: 80,
-                      showDebugAnchors: _showDebugAnchors,
-                      onLongPress: _toggleDebugAnchors,
-                      menuTiers: [
-                        for (final tier in _demoTiers)
-                          [
-                            for (final (icon, label) in tier)
-                              LiquidGlass(
-                                key: ValueKey(label),
-                                shape: const LiquidOval(),
-                                child: Material(
-                                  type: MaterialType.transparency,
-                                  child: IconButton(
-                                    tooltip: label,
-                                    onPressed: () =>
-                                        debugPrint('$label tapped'),
-                                    icon: Icon(icon, color: iconColor),
-                                  ),
-                                ),
-                              ),
-                          ],
-                      ],
-                      puck: LiquidGlass.withOwnLayer(
-                        settings: glassSettings,
-                        appearance: glassAppearance,
-                        shape: const LiquidOval(),
-                        child: Icon(Icons.menu, color: iconColor),
-                      ),
-                      child: PuckOverlay(
-                        key: const ValueKey('chat-menu'),
-                        initialEdge: PuckEdge.left,
-                        diameter: 64,
-                        menuRadius: 156,
-                        menuItemDiameter: 64,
-                        showDebugAnchors: _showDebugAnchors,
-                        onLongPress: _toggleDebugAnchors,
-                        menuItems: [
-                          for (final contact in _chatContacts)
-                            _ChatHeadAvatar(
-                              key: ValueKey(contact.name),
-                              name: contact.name,
-                              asset: contact.asset,
-                              selected: _selectedContact == contact.name,
-                              onTap: () {
-                                setState(() => _selectedContact = contact.name);
-                                _showStatus('Chatting with ${contact.name}');
-                              },
-                            ),
-                          _ChatHeadOverflowPuck(
-                            key: const ValueKey('more_chats'),
-                            onTap: () {
-                              setState(() => _selectedContact = null);
-                              _showStatus('More conversations');
-                            },
-                          ),
-                        ],
-                        puck: const _ChatHeadRootPuck(
-                          key: ValueKey('chat-root'),
-                        ),
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
-                  ),
-                ),
-                TickerMode(
-                  enabled: _tabIndex == 1,
-                  child: MenuLayoutDemo(
-                    key: ValueKey(_layoutReset),
-                    embedded: true,
-                  ),
-                ),
-              ],
+            TickerMode(
+              enabled: _tabIndex == 0,
+              child: _examplePage(glassSettings, glassAppearance, iconColor),
             ),
+            if (_layoutVisited)
+              TickerMode(enabled: _tabIndex == 1, child: const MenuLayoutDemo())
+            else
+              const SizedBox.expand(),
           ],
         ),
-      ),
-      home: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          backgroundColor: _tabIndex == 1 ? const Color(0xFF101722) : null,
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            title: const Text('Puck playground'),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            leading: _tabIndex == 1
-                ? null
-                : IconButton(
-                    tooltip: _darkMode
-                        ? 'Switch to light mode'
-                        : 'Switch to dark mode',
-                    icon: Icon(_darkMode ? Icons.light_mode : Icons.dark_mode),
-                    onPressed: () => setState(() => _darkMode = !_darkMode),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          maintainBottomViewPadding: true,
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: glass.GlassTabBar.bottom(
+                selectedIndex: _tabIndex,
+                onTabSelected: _selectTab,
+                horizontalPadding: 12,
+                verticalPadding: 12,
+                tabs: const [
+                  glass.GlassTab(
+                    icon: Icon(Icons.bubble_chart_outlined),
+                    activeIcon: Icon(Icons.bubble_chart),
+                    label: 'Puck',
                   ),
-            actions: [
-              if (_tabIndex == 1)
-                IconButton(
-                  tooltip: 'Reset layout',
-                  icon: const Icon(Icons.restart_alt),
-                  onPressed: () => setState(() => _layoutReset++),
-                ),
-              if (_tabIndex == 0)
-                IconButton(
-                  tooltip: _showDebugAnchors
-                      ? 'Hide debug visuals'
-                      : 'Show debug visuals',
-                  isSelected: _showDebugAnchors,
-                  icon: const Icon(Icons.bug_report_outlined),
-                  selectedIcon: const Icon(Icons.bug_report),
-                  onPressed: () =>
-                      setState(() => _showDebugAnchors = !_showDebugAnchors),
-                ),
-            ],
-            bottom: TabBar(
-              tabs: const [
-                Tab(text: 'Example'),
-                Tab(text: 'Layout'),
-              ],
-              onTap: (index) {
-                FocusManager.instance.primaryFocus?.unfocus();
-                setState(() => _tabIndex = index);
-              },
+                  glass.GlassTab(
+                    icon: Icon(Icons.radar_outlined),
+                    activeIcon: Icon(Icons.radar),
+                    label: 'Layout',
+                  ),
+                ],
+              ),
             ),
           ),
-          body: _tabIndex == 1
-              ? const SizedBox.expand()
-              : SafeArea(
-                  child: const Center(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.all(24),
-                      child: SizedBox(
-                        width: 360,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Drag or fling the puck.\nTap to open or close three menu tiers.\nLong-press to toggle arcs, end-cap lines, and anchor dots.',
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: 24),
-                            TextField(
-                              textInputAction: TextInputAction.done,
-                              decoration: InputDecoration(
-                                labelText: 'Keyboard test',
-                                hintText: 'Tap to open the keyboard',
-                                helperText:
-                                    'Drag the puck to the keyboard boundary.',
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
         ),
       ),
     );
   }
+
+  Widget _examplePage(
+    LiquidGlassSettings glassSettings,
+    LiquidGlassAppearance glassAppearance,
+    Color iconColor,
+  ) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Scaffold(
+        key: const ValueKey('example-page'),
+        backgroundColor: _darkMode ? const Color(0xFF111114) : Colors.white,
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text(
+            'PUCK',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            tooltip: _darkMode ? 'Switch to light mode' : 'Switch to dark mode',
+            icon: Icon(_darkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () => setState(() => _darkMode = !_darkMode),
+          ),
+          actions: [
+            IconButton(
+              tooltip: _keyboardFocus.hasFocus
+                  ? 'Hide keyboard'
+                  : 'Show keyboard',
+              icon: _KeyboardDirectionIcon(expanded: _keyboardFocus.hasFocus),
+              onPressed: _toggleKeyboard,
+            ),
+            IconButton(
+              tooltip: _showDebugAnchors
+                  ? 'Hide debug visuals'
+                  : 'Show debug visuals',
+              isSelected: _showDebugAnchors,
+              icon: const Icon(Icons.bug_report_outlined),
+              selectedIcon: const Icon(Icons.bug_report),
+              onPressed: _toggleDebugAnchors,
+            ),
+          ],
+        ),
+        body: SafeArea(
+          top: false,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const Center(child: _MenuCircles()),
+              Offstage(
+                child: ExcludeSemantics(
+                  child: TextField(
+                    key: const ValueKey('keyboard-input'),
+                    focusNode: _keyboardFocus,
+                    textInputAction: TextInputAction.done,
+                    enableInteractiveSelection: false,
+                    onSubmitted: (_) => _keyboardFocus.unfocus(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      // Page-local overlays remain above their app bar and share the bottom
+      // navigation's safe padding with the Layout explorer.
+      SafeArea(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            PuckMenu.singleLevel(
+              key: const ValueKey('chat-menu'),
+              layout: const PuckMenuLayout(
+                initialEdge: PuckEdge.left,
+                diameter: 64,
+                levelRadius: 156,
+                puckDiameter: 64,
+              ),
+              debug: PuckMenuDebug(showAnchors: _showDebugAnchors),
+              puckItems: [
+                for (final contact in _chatContacts)
+                  _ChatHeadAvatar(
+                    key: ValueKey(contact.name),
+                    name: contact.name,
+                    asset: contact.asset,
+                    selected: _selectedContact == contact.name,
+                    onTap: () {
+                      setState(() => _selectedContact = contact.name);
+                      _showStatus('Chatting with ${contact.name}');
+                    },
+                  ),
+                _ChatHeadOverflowPuck(
+                  key: const ValueKey('more_chats'),
+                  onTap: () {
+                    setState(() => _selectedContact = null);
+                    _showStatus('More conversations');
+                  },
+                ),
+              ],
+              rootPuck: const _ChatHeadRootPuck(key: ValueKey('chat-root')),
+            ),
+            PuckMenu.multiLevel(
+              key: const ValueKey('example-menu'),
+              showRopes: false,
+              debug: PuckMenuDebug(
+                showLevelCurves: true,
+                showAnchors: _showDebugAnchors,
+              ),
+              puckItems: [
+                for (final tier in _demoTiers)
+                  [
+                    for (final (icon, label) in tier)
+                      LiquidGlass.withOwnLayer(
+                        key: ValueKey(label),
+                        settings: glassSettings,
+                        appearance: glassAppearance,
+                        shape: const LiquidOval(),
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: IconButton(
+                            tooltip: label,
+                            onPressed: () => debugPrint('$label tapped'),
+                            icon: Icon(icon, color: iconColor),
+                          ),
+                        ),
+                      ),
+                  ],
+              ],
+              rootPuck: LiquidGlass.withOwnLayer(
+                settings: glassSettings,
+                appearance: glassAppearance,
+                shape: const LiquidOval(),
+                child: Icon(Icons.menu, color: iconColor),
+              ),
+              layout: const PuckMenuLayout(levelRadius: 80),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _MenuCircles extends StatelessWidget {
+  const _MenuCircles();
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Three menu circles',
+    image: true,
+    child: const Icon(Icons.bubble_chart, size: 36, color: Color(0xFFD1D5DB)),
+  );
+}
+
+class _KeyboardDirectionIcon extends StatelessWidget {
+  const _KeyboardDirectionIcon({required this.expanded});
+
+  final bool expanded;
+
+  // Keep the keyboard upright in both states; only the direction changes.
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 26,
+    height: 30,
+    child: Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        const Icon(Icons.keyboard_outlined, size: 23),
+        Positioned(
+          bottom: -2,
+          child: Icon(
+            expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+            size: 16,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Opaque root puck styled after the classic Facebook Messenger chat head.

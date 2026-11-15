@@ -14,9 +14,9 @@ void main() {
   testWidgets('anchor visualizer is disabled by default', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: PuckOverlay(
-          puck: ColoredBox(color: Colors.blue),
-          child: SizedBox(),
+        home: PuckMenu.singleLevel(
+          puckItems: [],
+          rootPuck: ColoredBox(color: Colors.blue),
         ),
       ),
     );
@@ -30,11 +30,10 @@ void main() {
     const itemKey = ValueKey('item');
     await tester.pumpWidget(
       const MaterialApp(
-        home: PuckOverlay(
-          showDebugAnchors: true,
-          puck: ColoredBox(key: mainKey, color: Colors.blue),
-          menuItems: [ColoredBox(key: itemKey, color: Colors.green)],
-          child: SizedBox(),
+        home: PuckMenu.singleLevel(
+          debug: PuckMenuDebug(showAnchors: true),
+          rootPuck: ColoredBox(key: mainKey, color: Colors.blue),
+          puckItems: [ColoredBox(key: itemKey, color: Colors.green)],
         ),
       ),
     );

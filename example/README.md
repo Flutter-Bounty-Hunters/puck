@@ -2,8 +2,18 @@
 
 A playground for dragging, flinging, and docking the main puck.
 
-Use the **Example** and **Layout** tabs to switch between the glass menu demo
-and the layout explorer. Each tab keeps its puck position while you switch.
+Use the bottom **Puck** and **Layout** tabs to switch between the glass menu
+demo and the layout explorer. The iOS-style floating tabs come from
+[liquid_glass_widgets](https://pub.dev/packages/liquid_glass_widgets), with shaders
+loaded on demand rather than a startup warm-up. Each tab has its own app bar and
+keeps its puck position while you switch.
+
+The Puck page has a centered bold PUCK title and a small light-gray version
+of its tab icon. Its directional keyboard button, immediately left of debug,
+shows or hides the keyboard without a visible form. Menus avoid the keyboard;
+roots that already fit above it keep their position.
+The Messenger menu and multi-tier glass menu use the same arc solver, including
+continuous rotation around barriers and full rings when enough space is available.
 The Layout tab shows three tiers with
 4 / 7 / 12 items, shown as radius circles, 48px-wide bands, and filled sectors
 for the calculated arc. Drag the root to inspect the existing layout rules;

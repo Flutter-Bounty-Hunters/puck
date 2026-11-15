@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:puck/puck.dart';
 
-import '../prepared_menu_glass_layer.dart';
-
 const performanceVariants = [
   'solid_single',
   'solid_three_tier',
@@ -51,7 +49,6 @@ class PerformanceConfig {
     this.repeats = 5,
     this.startDelayMs = 250,
     this.budgetFps = 60,
-    this.prepareGlass = true,
     this.curves = false,
     this.automated = false,
     this.openingProfile = false,
@@ -61,7 +58,6 @@ class PerformanceConfig {
   final int repeats;
   final int startDelayMs;
   final double budgetFps;
-  final bool prepareGlass;
   final bool curves;
   final bool automated;
   final bool openingProfile;
@@ -85,7 +81,6 @@ class PerformanceConfig {
       repeats: int.parse(query['repeats'] ?? '5'),
       startDelayMs: int.parse(query['start_delay_ms'] ?? '250'),
       budgetFps: double.parse(query['budget_fps'] ?? '60'),
-      prepareGlass: query['prepare'] != '0',
       curves: query['curves'] == '1',
     );
     if (config.repeats < 1 ||
@@ -105,9 +100,10 @@ class PerformanceConfig {
     'repeats': repeats,
     'start_delay_ms': startDelayMs,
     'frame_budget_fps': budgetFps,
-    'prepare_glass': prepareGlass,
+    'prepare_glass': false,
+    'glass_layer_policy': 'individual_pucks',
     'curves': curves,
-    'maintain_menu_state': true,
+    'closed_item_policy': 'dispose',
     'photo_cache_policy':
         'Bundled assets; no explicit precache; 192px decode cache',
   };
@@ -122,9 +118,12 @@ class PerformanceHandles {
   final root = GlobalKey(debugLabel: 'performance-root');
   final overlay = GlobalKey(debugLabel: 'performance-overlay');
   final List<GlobalKey> items;
-  final expanded = ValueNotifier(false);
+  final controller = PuckMenuController();
+  bool get isExpanded =>
+      controller.status == PuckMenuStatus.expanding ||
+      controller.status == PuckMenuStatus.expanded;
   final photoReadyUs = <String, int>{};
-  void dispose() => expanded.dispose();
+  void dispose() => controller.dispose();
 }
 
 void runPerformanceDemo(String variant) {
@@ -172,14 +171,12 @@ class _PerformanceDemoState extends State<PerformanceDemo> {
     );
     Widget content;
     if (config.glass) {
-      content = root
-          ? LiquidGlass.withOwnLayer(
-              settings: _settings,
-              appearance: _appearance,
-              shape: const LiquidOval(),
-              child: icon,
-            )
-          : LiquidGlass(shape: const LiquidOval(), child: icon);
+      content = LiquidGlass.withOwnLayer(
+        settings: _settings,
+        appearance: _appearance,
+        shape: const LiquidOval(),
+        child: icon,
+      );
     } else if (config.photos) {
       content = Stack(
         fit: StackFit.expand,
@@ -261,32 +258,17 @@ class _PerformanceDemoState extends State<PerformanceDemo> {
           children: [
             child!,
             SafeArea(
-              child: PuckOverlay(
+              child: PuckMenu.multiLevel(
                 key: _handles.overlay,
-                diameter: performanceRootDiameter,
-                menuItemDiameter: performanceItemDiameter,
-                menuRadius: performanceMenuRadius,
-                maintainMenuState: true,
-                menuExpanded: _handles.expanded,
-                showTierCurves: widget.config.curves,
-                menuTierBuilder: widget.config.glass
-                    ? (context, tier, child) => widget.config.prepareGlass
-                          ? PreparedMenuGlassLayer(
-                              settings: _settings,
-                              appearance: _appearance,
-                              itemCount: widget.config.counts[tier],
-                              radius: 80.0 + 80 * tier + 4 * tier * (tier + 1),
-                              child: child,
-                            )
-                          : LiquidGlassLayer(
-                              settings: _settings,
-                              defaultAppearance: _appearance,
-                              child: child,
-                            )
-                    : null,
-                menuTiers: tiers,
-                puck: _content(0, root: true),
-                child: const SizedBox.expand(),
+                layout: const PuckMenuLayout(
+                  diameter: performanceRootDiameter,
+                  puckDiameter: performanceItemDiameter,
+                  levelRadius: performanceMenuRadius,
+                ),
+                controller: _handles.controller,
+                debug: PuckMenuDebug(showLevelCurves: widget.config.curves),
+                puckItems: tiers,
+                rootPuck: _content(0, root: true),
               ),
             ),
           ],

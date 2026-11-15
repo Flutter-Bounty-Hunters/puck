@@ -12,22 +12,20 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(402, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final expanded = ValueNotifier(true);
-      addTearDown(expanded.dispose);
+      final controller = PuckMenuController()..open();
+      addTearDown(controller.dispose);
       const root = ValueKey('root');
       await tester.pumpWidget(
         MaterialApp(
-          home: PuckOverlay(
-            initialEdge: edge,
-            layoutPreview: true,
-            menuExpanded: expanded,
-            menuRadius: 80,
-            puck: const ColoredBox(key: root, color: Colors.blue),
-            menuTiers: [
+          home: PuckMenu.multiLevel(
+            layout: PuckMenuLayout(initialEdge: edge, levelRadius: 80),
+            debug: const PuckMenuDebug(layoutPreview: true),
+            controller: controller,
+            rootPuck: const ColoredBox(key: root, color: Colors.blue),
+            puckItems: [
               for (final n in [4, 7, 12])
                 List.generate(n, (_) => const SizedBox()),
             ],
-            child: const SizedBox.expand(),
           ),
         ),
       );
@@ -87,22 +85,20 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(402, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final expanded = ValueNotifier(true);
-    addTearDown(expanded.dispose);
+    final controller = PuckMenuController()..open();
+    addTearDown(controller.dispose);
     const root = ValueKey('root');
     await tester.pumpWidget(
       MaterialApp(
-        home: PuckOverlay(
-          layoutPreview: true,
-          showDebugAnchors: true,
-          menuExpanded: expanded,
-          menuRadius: 80,
-          puck: const ColoredBox(key: root, color: Colors.blue),
-          menuTiers: [
+        home: PuckMenu.multiLevel(
+          debug: const PuckMenuDebug(layoutPreview: true, showAnchors: true),
+          controller: controller,
+          rootPuck: const ColoredBox(key: root, color: Colors.blue),
+          puckItems: [
             for (final n in [4, 7, 12])
               List.generate(n, (_) => const SizedBox()),
           ],
-          child: const SizedBox.expand(),
+          layout: const PuckMenuLayout(levelRadius: 80),
         ),
       ),
     );
@@ -145,25 +141,23 @@ void main() {
   ) async {
     var preview = false;
     late StateSetter rebuild;
-    final expanded = ValueNotifier(true);
-    addTearDown(expanded.dispose);
+    final controller = PuckMenuController()..open();
+    addTearDown(controller.dispose);
     const root = ValueKey('root');
     await tester.pumpWidget(
       MaterialApp(
         home: StatefulBuilder(
           builder: (context, setState) {
             rebuild = setState;
-            return PuckOverlay(
-              layoutPreview: preview,
-              showDebugAnchors: true,
-              menuExpanded: expanded,
-              menuRadius: 80,
-              puck: const ColoredBox(key: root, color: Colors.blue),
-              menuTiers: [
+            return PuckMenu.multiLevel(
+              debug: PuckMenuDebug(layoutPreview: preview, showAnchors: true),
+              controller: controller,
+              rootPuck: const ColoredBox(key: root, color: Colors.blue),
+              puckItems: [
                 for (final count in [4, 7, 12])
                   List.generate(count, (_) => const Text('Menu item')),
               ],
-              child: const SizedBox.expand(),
+              layout: const PuckMenuLayout(levelRadius: 80),
             );
           },
         ),
@@ -206,7 +200,7 @@ void main() {
 
     await tester.tap(find.byKey(root));
     await tester.pumpAndSettle();
-    expect(expanded.value, isFalse);
+    expect(controller.status, PuckMenuStatus.collapsed);
     expect(
       tester
           .widgetList<CustomPaint>(find.byType(CustomPaint))

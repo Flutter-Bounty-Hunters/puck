@@ -34,14 +34,51 @@ class _Phase {
   });
 }
 
-class _ItemSensor {
-  _ItemSensor(this.box, this.spring);
-  final RenderBox box;
-  final Element spring;
-  SpringPuck get widget => spring.widget as SpringPuck;
-  Offset get center =>
-      (box.parentData! as StackParentData).offset +
-      box.size.center(Offset.zero);
+/// Observes a fixture item across mounting, collapse, disposal, and reopening.
+class PerformanceItemSensor {
+  PerformanceItemSensor(this.key, this.origin);
+  final GlobalKey key;
+  final Offset Function() origin;
+  BuildContext? _context;
+  RenderBox? _box;
+  Element? _spring;
+
+  // Each opening creates new elements. Resolve once per mounted subtree,
+  // without mounting items merely to observe the closed menu.
+  void _resolve() {
+    final context = key.currentContext;
+    if (identical(_context, context)) return;
+    _context = context;
+    _box = null;
+    _spring = null;
+    if (context == null) return;
+    _box = PerformanceAutomation._stackChild(key);
+    context.visitAncestorElements((element) {
+      if (element.widget is SpringPuck) {
+        _spring = element;
+        return false;
+      }
+      return true;
+    });
+  }
+
+  SpringPuck? get widget {
+    _resolve();
+    return _spring?.widget as SpringPuck?;
+  }
+
+  bool get mounted {
+    _resolve();
+    return _box?.attached == true;
+  }
+
+  Offset get center {
+    _resolve();
+    final box = _box;
+    if (box == null || !box.attached) return origin();
+    return (box.parentData! as StackParentData).offset +
+        box.size.center(Offset.zero);
+  }
 }
 
 /// Sends timestamped events through Flutter's normal gesture pipeline. It
@@ -59,7 +96,7 @@ class PerformanceAutomation with WidgetsBindingObserver {
   int? _interactiveReadyUs;
   final _frames = <FrameTiming>[];
   final _phases = <_Phase>[];
-  final _items = <_ItemSensor>[];
+  final _items = <PerformanceItemSensor>[];
   final _errors = <String>[];
   final _lifecycleEvents = <Map<String, Object?>>[];
   _Phase? _active;
@@ -138,18 +175,9 @@ class PerformanceAutomation with WidgetsBindingObserver {
             .display
             .refreshRate;
         for (final key in handles.items) {
-          Element? spring;
-          key.currentContext!.visitAncestorElements((element) {
-            if (element.widget is SpringPuck) {
-              spring = element;
-              return false;
-            }
-            return true;
-          });
-          if (spring == null) throw StateError('Missing spring item');
-          _items.add(_ItemSensor(_stackChild(key), spring!));
+          _items.add(PerformanceItemSensor(key, () => _rootCenter));
         }
-        if (handles.expanded.value) {
+        if (handles.isExpanded) {
           throw StateError('Cold opening was contaminated by an earlier open');
         }
         // Engine frames can run before iOS finishes activating the window.
@@ -228,7 +256,7 @@ class PerformanceAutomation with WidgetsBindingObserver {
     final hidden = (performanceRootDiameter - performanceItemDiameter) / 2;
     if (phase.name.contains('open') &&
         !phase.name.startsWith('open_') &&
-        handles.expanded.value &&
+        handles.isExpanded &&
         points
             .skip(1)
             .any((point) => (point - points.first).distance > hidden + .5)) {
@@ -243,7 +271,7 @@ class PerformanceAutomation with WidgetsBindingObserver {
     }
     if (phase.name.contains('close') &&
         !phase.name.startsWith('closed_') &&
-        !handles.expanded.value &&
+        !handles.isExpanded &&
         points
             .skip(1)
             .every((point) => (point - points.first).distance <= hidden + .5)) {
@@ -336,11 +364,11 @@ class PerformanceAutomation with WidgetsBindingObserver {
   }
 
   Future<void> _tap({String? measuredPhase, int repetition = 1}) async {
-    final wasExpanded = handles.expanded.value;
+    final wasExpanded = handles.isExpanded;
     _down();
     await Future<void>.delayed(const Duration(milliseconds: 40));
     _up(measuredPhase: measuredPhase, repetition: repetition);
-    if (handles.expanded.value == wasExpanded) {
+    if (handles.isExpanded == wasExpanded) {
       throw StateError('Root tap did not toggle the menu');
     }
   }
@@ -361,18 +389,19 @@ class PerformanceAutomation with WidgetsBindingObserver {
         stableSince = now;
       }
       last = current;
-      final itemsReady = handles.expanded.value
+      final itemsReady = handles.isExpanded
           ? _items.every(
               (item) =>
-                  item.widget.expanded &&
-                  (item.center - (item.widget.target + const Offset(24, 24)))
+                  item.mounted &&
+                  item.widget?.expanded == true &&
+                  (item.center - (item.widget!.target + const Offset(24, 24)))
                           .distance <
                       .75,
             )
-          : _items.every((item) => item.widget.dormant);
+          : _items.every((item) => !item.mounted);
       final photosReady =
           !config.photos ||
-          !handles.expanded.value ||
+          !handles.isExpanded ||
           handles.photoReadyUs.keys
                   .where((key) => key.startsWith('item-'))
                   .length ==
@@ -449,7 +478,7 @@ class PerformanceAutomation with WidgetsBindingObserver {
   }
 
   Future<void> _dragSequence(bool open) async {
-    if (handles.expanded.value != open) {
+    if (handles.isExpanded != open) {
       await _tap();
       await _settle();
     }

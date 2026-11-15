@@ -15,11 +15,13 @@ Future<void> _mount(
   VoidCallback? onItemTap,
 }) => tester.pumpWidget(
   MaterialApp(
-    home: PuckOverlay(
-      initialEdge: edge,
-      initialVerticalAlignment: alignment,
-      puck: const ColoredBox(key: _main, color: Colors.blue),
-      menuItems: [
+    home: PuckMenu.singleLevel(
+      layout: PuckMenuLayout(
+        initialEdge: edge,
+        initialVerticalAlignment: alignment,
+      ),
+      rootPuck: const ColoredBox(key: _main, color: Colors.blue),
+      puckItems: [
         for (var i = 0; i < itemCount; i++)
           GestureDetector(
             key: _item(i),
@@ -27,7 +29,6 @@ Future<void> _mount(
             child: const ColoredBox(color: Colors.green),
           ),
       ],
-      child: const SizedBox.expand(),
     ),
   ),
 );
@@ -103,11 +104,10 @@ void main() {
 
   for (final edge in PuckEdge.values) {
     for (final count in [2, 3, 4]) {
-      // At corners, three or more items cannot fit equal 24px clear gaps on
-      // the fixed 112px radius. The existing corner tests verify the inset.
+      // Check equal radial spacing and visibility with the shared arc solver.
       for (final alignment in count == 2 ? [0.0, 0.5, 1.0] : [0.5]) {
         testWidgets(
-          '$count items at $edge/$alignment have equal visible edge gaps',
+          '$count items at $edge/$alignment have equal radial gaps and clear the walls',
           (tester) async {
             await _mount(
               tester,
@@ -125,7 +125,6 @@ void main() {
               for (var i = 1; i < count; i++)
                 (rects[i].center - rects[i - 1].center).distance - 48,
             ];
-            // Compare actual circle-edge distances, not angles between centers.
             double boundaryGap(Rect rect) => [
               rect.left,
               800 - rect.right,
@@ -134,12 +133,15 @@ void main() {
             ].reduce(math.min);
             final gap = clearGaps.first;
             expect(gap, greaterThanOrEqualTo(24));
-            for (final actual in [
-              boundaryGap(rects.first),
-              ...clearGaps,
-              boundaryGap(rects.last),
-            ]) {
+            for (final actual in clearGaps) {
               expect(actual, closeTo(gap, 0.1));
+            }
+            for (final rect in rects) {
+              expect(boundaryGap(rect), greaterThanOrEqualTo(4 - 1e-6));
+              expect(
+                (rect.center - tester.getCenter(find.byKey(_main))).distance,
+                closeTo(112, 0.1),
+              );
             }
           },
         );
@@ -159,9 +161,9 @@ void main() {
           home: StatefulBuilder(
             builder: (context, setState) {
               rebuild = setState;
-              return PuckOverlay(
-                puck: const ColoredBox(key: _main, color: Colors.blue),
-                menuItems: [
+              return PuckMenu.singleLevel(
+                rootPuck: const ColoredBox(key: _main, color: Colors.blue),
+                puckItems: [
                   for (var i = 0; i < count; i++)
                     _LifecyclePuck(
                       key: _item(i),
@@ -169,7 +171,6 @@ void main() {
                       onDispose: () => disposals++,
                     ),
                 ],
-                child: const SizedBox.expand(),
               );
             },
           ),
@@ -241,9 +242,9 @@ void main() {
         await tester.pumpAndSettle();
         for (var i = 0; i < 3; i++) {
           final rect = tester.getRect(find.byKey(_item(i)));
-          expect(rect.left, greaterThanOrEqualTo(24));
+          expect(rect.left, greaterThanOrEqualTo(4 - 1e-6));
           expect(rect.top, greaterThanOrEqualTo(0));
-          expect(rect.right, lessThanOrEqualTo(776));
+          expect(rect.right, lessThanOrEqualTo(796 + 1e-6));
           expect(rect.bottom, lessThanOrEqualTo(600));
         }
       });

@@ -21,7 +21,6 @@ class SpringPuck extends StatefulWidget {
     this.curves,
     this.tier = 0,
     this.order = 0,
-    this.dormant = false,
     required this.target,
     required this.diameter,
     required this.parentDiameter,
@@ -29,6 +28,7 @@ class SpringPuck extends StatefulWidget {
     required this.horizontalInset,
     required this.expanded,
     required this.onCollapsed,
+    this.onExpanded,
     required this.child,
   });
 
@@ -43,8 +43,6 @@ class SpringPuck extends StatefulWidget {
   final int tier;
   final int order;
 
-  /// Retained closed items track their parent without running a spring.
-  final bool dormant;
   final Offset target;
   final double diameter;
   final double parentDiameter;
@@ -52,6 +50,7 @@ class SpringPuck extends StatefulWidget {
   final double horizontalInset;
   final bool expanded;
   final VoidCallback onCollapsed;
+  final VoidCallback? onExpanded;
   final Widget child;
 
   @override
@@ -77,6 +76,7 @@ class _SpringPuckState extends State<SpringPuck>
   Duration _elapsedOffset = Duration.zero;
   Stopwatch? _firstTickClock;
   bool _hasAdvanced = false;
+  bool _reportedExpanded = false;
   int _traceTicks = 0;
 
   @override
@@ -86,7 +86,6 @@ class _SpringPuckState extends State<SpringPuck>
   }
 
   void _scheduleRetarget() {
-    if (widget.dormant) return;
     if (PuckOpeningTrace.representative(widget.tier, widget.order)) {
       PuckOpeningTrace.instant('spring.schedule', {
         'tier': widget.tier,
@@ -218,33 +217,41 @@ class _SpringPuckState extends State<SpringPuck>
     });
     if (widget.showRopes) widget.cables.repaint();
     widget.curves?.repaint();
+    if (widget.expanded &&
+        !_reportedExpanded &&
+        _x!.isDone(t) &&
+        _y!.isDone(t)) {
+      _reportedExpanded = true;
+      final callback = widget.onExpanded;
+      // Eager spring sampling can happen during the parent's build.
+      if (eager) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && widget.expanded) callback?.call();
+        });
+      } else {
+        callback?.call();
+      }
+    }
   }
 
   @override
   void didUpdateWidget(covariant SpringPuck oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.curves != widget.curves) oldWidget.curves?.remove(this);
-    if (widget.dormant) {
-      _delayTimer?.cancel();
-      _delayTimer = null;
-      _ticker.stop();
-      _position = widget.origin;
-      _velocity = Offset.zero;
-      _hasAdvanced = false;
-      _rope = null;
-      widget.cables.remove(this);
-      widget.curves?.remove(this);
-      return;
+    final newMotion = oldWidget.motionClock != widget.motionClock;
+    if (newMotion || oldWidget.expanded != widget.expanded) {
+      _reportedExpanded = false;
     }
+    if (oldWidget.curves != widget.curves) oldWidget.curves?.remove(this);
     if (oldWidget.showRopes != widget.showRopes) {
       _rope = null;
       if (!widget.showRopes) widget.cables.remove(this);
     }
-    if (oldWidget.target != widget.target ||
+    if (newMotion ||
+        oldWidget.target != widget.target ||
         oldWidget.expanded != widget.expanded ||
         oldWidget.origin != widget.origin ||
         oldWidget.showRopes != widget.showRopes) {
-      if (oldWidget.expanded != widget.expanded) {
+      if (newMotion || oldWidget.expanded != widget.expanded) {
         _scheduleRetarget();
       } else if (_delayTimer == null) {
         _retarget();
@@ -275,14 +282,12 @@ class _SpringPuckState extends State<SpringPuck>
   @override
   Widget build(BuildContext context) {
     final position = _visiblePosition;
-    if (!widget.dormant) {
-      widget.curves?.update(
-        this,
-        bounds: position & Size.square(widget.diameter),
-        tier: widget.tier,
-        order: widget.order,
-      );
-    }
+    widget.curves?.update(
+      this,
+      bounds: position & Size.square(widget.diameter),
+      tier: widget.tier,
+      order: widget.order,
+    );
     if (widget.showRopes) {
       widget.cables.update(
         this,
@@ -299,10 +304,7 @@ class _SpringPuckState extends State<SpringPuck>
         ignoring: !widget.expanded,
         child: ExcludeSemantics(
           excluding: !widget.expanded,
-          child: Offstage(
-            offstage: widget.dormant,
-            child: ClipOval(child: widget.child),
-          ),
+          child: ClipOval(child: widget.child),
         ),
       ),
     );

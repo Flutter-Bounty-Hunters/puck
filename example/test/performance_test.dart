@@ -31,11 +31,12 @@ void main() {
 
   test('route configuration is explicit and rejects contaminated variants', () {
     final config = PerformanceConfig.fromRoute(
-      '/photos_three_tier?automated=1&repeats=3&prepare=0&budget_fps=120',
+      '/photos_three_tier?automated=1&repeats=3&budget_fps=120',
     );
     expect(config.counts, [4, 7, 12]);
     expect(config.automated, isTrue);
-    expect(config.prepareGlass, isFalse);
+    expect(config.toJson()['glass_layer_policy'], 'individual_pucks');
+    expect(config.toJson()['prepare_glass'], isFalse);
     expect(config.budgetFps, 120);
     expect(() => PerformanceConfig.fromRoute('/unknown'), throwsArgumentError);
     expect(
@@ -51,28 +52,36 @@ void main() {
       tester.platformDispatcher.defaultRouteNameTestValue =
           '/$variant?automated=1';
       addTearDown(tester.platformDispatcher.clearDefaultRouteNameTestValue);
-      final config = PerformanceConfig(variant: variant, prepareGlass: false);
+      final config = PerformanceConfig(variant: variant);
       final handles = PerformanceHandles(config);
       await tester.pumpWidget(
         PerformanceDemo(config: config, handles: handles),
       );
       await tester.pumpAndSettle();
-      final overlay = tester.widget<PuckOverlay>(find.byType(PuckOverlay));
-      expect(overlay.menuTiers.map((tier) => tier.length), config.counts);
-      expect(handles.expanded.value, isFalse);
+      final overlay = tester.widget<PuckMenu>(find.byType(PuckMenu));
+      expect(overlay.puckItems.map((tier) => tier.length), config.counts);
+      expect(handles.isExpanded, isFalse);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(
         find.byType(Image, skipOffstage: false),
-        config.photos ? findsNWidgets(config.itemCount + 1) : findsNothing,
+        config.photos ? findsOneWidget : findsNothing,
       );
       expect(find.byType(Image), config.photos ? findsOneWidget : findsNothing);
       expect(
+        find.byType(LiquidGlassLayer, skipOffstage: false),
+        config.glass ? findsOneWidget : findsNothing,
+      );
+      expect(
         find.byType(LiquidGlassLayer),
-        config.glass ? findsNWidgets(config.counts.length + 1) : findsNothing,
+        config.glass ? findsOneWidget : findsNothing,
       );
       await tester.tap(find.byKey(handles.root));
       await tester.pumpAndSettle();
-      expect(handles.expanded.value, isTrue);
+      expect(handles.isExpanded, isTrue);
+      expect(
+        find.byType(LiquidGlassLayer),
+        config.glass ? findsNWidgets(config.itemCount + 1) : findsNothing,
+      );
       expect(
         find.byType(Image),
         config.photos ? findsNWidgets(config.itemCount + 1) : findsNothing,
@@ -81,6 +90,18 @@ void main() {
         tester.getCenter(find.byKey(handles.items.last)),
         isNot(tester.getCenter(find.byKey(handles.root))),
       );
+      await tester.tap(find.byKey(handles.root));
+      await tester.pumpAndSettle();
+      for (final key in handles.items) {
+        expect(find.byKey(key, skipOffstage: false), findsNothing);
+      }
+      expect(
+        find.byType(LiquidGlassLayer, skipOffstage: false),
+        config.glass ? findsOneWidget : findsNothing,
+      );
+      await tester.tap(find.byKey(handles.root));
+      await tester.pumpAndSettle();
+      expect(find.byKey(handles.items.last), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
       handles.dispose();
       expect(tester.takeException(), isNull);

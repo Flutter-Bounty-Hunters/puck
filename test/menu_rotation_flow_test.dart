@@ -14,21 +14,20 @@ void main() {
           (tester) async {
             await tester.binding.setSurfaceSize(Size(width, 900));
             addTearDown(() => tester.binding.setSurfaceSize(null));
-            final expanded = ValueNotifier(true);
-            addTearDown(expanded.dispose);
+            final controller = PuckMenuController()..open();
+            addTearDown(controller.dispose);
             const root = ValueKey('root');
             await tester.pumpWidget(
               MaterialApp(
-                home: PuckOverlay(
-                  layoutPreview: true,
-                  menuExpanded: expanded,
-                  menuRadius: 80,
-                  puck: const ColoredBox(key: root, color: Colors.blue),
-                  menuTiers: [
+                home: PuckMenu.multiLevel(
+                  debug: const PuckMenuDebug(layoutPreview: true),
+                  controller: controller,
+                  rootPuck: const ColoredBox(key: root, color: Colors.blue),
+                  puckItems: [
                     for (final n in [4, 7, 12])
                       List.generate(n, (_) => const SizedBox()),
                   ],
-                  child: const SizedBox.expand(),
+                  layout: const PuckMenuLayout(levelRadius: 80),
                 ),
               ),
             );

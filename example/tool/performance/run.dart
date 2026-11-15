@@ -45,7 +45,6 @@ Options:
   --timeout <seconds>     Per-launch timeout including build (default: 300)
   --output <file>         New self-contained JSON file
   --binary <path>         Prebuilt app from lib/performance/main.dart
-  --no-prepare           Disable idle glass preparation
   --curves               Include tier curves in every variant
   --trace                Save incremental VM traces (adds overhead)
   --profile-opening      Capture opening timeline and CPU call stacks
@@ -55,14 +54,7 @@ Options:
 
 class RunnerOptions {
   RunnerOptions(List<String> arguments) {
-    const flags = {
-      'no-prepare',
-      'curves',
-      'trace',
-      'dry-run',
-      'help',
-      'profile-opening',
-    };
+    const flags = {'curves', 'trace', 'dry-run', 'help', 'profile-opening'};
     const values = {
       'device',
       'device-connection',
@@ -150,7 +142,6 @@ class RunnerOptions {
   double get timeoutSeconds => double.parse(_arguments['timeout'] ?? '300');
   String? get output => _arguments['output'];
   String? get binary => _arguments['binary'];
-  bool get noPrepare => _arguments.containsKey('no-prepare');
   bool get curves => _arguments.containsKey('curves');
   bool get trace => _arguments.containsKey('trace');
   bool get profileOpening => _arguments.containsKey('profile-opening');
@@ -169,7 +160,6 @@ class RunnerOptions {
     'timeout': timeoutSeconds,
     'output': output,
     'binary': binary,
-    'no_prepare': noPrepare,
     'curves': curves,
     'trace': trace,
     'profile_opening': profileOpening,
@@ -203,7 +193,6 @@ List<String> launchCommand(
       'repeats': '${options.repeats}',
       'start_delay_ms': '${options.startDelayMs}',
       'budget_fps': '${options.budgetFps}',
-      'prepare': options.noPrepare ? '0' : '1',
       'curves': options.curves ? '1' : '0',
       'opening_profile': options.profileOpening ? '1' : '0',
     },

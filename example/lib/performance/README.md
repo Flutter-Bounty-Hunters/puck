@@ -13,17 +13,18 @@ Six independent, manually runnable fixtures:
 
 The root uses the same material category as its menu. Every fixture uses the same
 64px root, 48px items, 80px preferred inner radius, right/mid-screen starting
-anchor, static patterned background, safe-area bounds, and retained item state.
+anchor, static patterned background, safe-area bounds, and item disposal on close.
 The three-tier variants share the same spacing/obstacle solver. Curves and ropes
 are off by default to isolate circle content. Photos are distinct local NASA JPEG fixtures
 with credits in `assets/performance/sources.json`; no network requests occur at
 runtime. Photo decoding is not explicitly prewarmed. The single-tier fixture uses five
 distinct photos including its root; the three-tier fixture uses 24.
-Because item state is retained, mounted photo widgets can start decoding before
-the first tap, just as retained glass widgets initialize before that tap. Startup
-and per-image readiness timestamps are saved to make this visible.
-Glass uses the demo's current grouping: one glass layer per tier and a separate
-root layer. Reports record whether native shader filters are supported; platforms
+Menu items mount on opening and are disposed after collapse; closed menus do
+not build hidden photo or glass widgets. Root content mounts at startup. Later
+opens may still benefit from Flutter's image cache and renderer resource caches.
+Startup and per-image readiness timestamps are saved to make this visible.
+Glass uses an independent rendering layer for every item and the root, matching
+the demo. Reports record this policy and whether native shader filters are supported; platforms
 without them use the glass package's fallback and should not be compared as real
 glass performance.
 
@@ -122,7 +123,7 @@ Useful controls:
 
 ```sh
 # Raw glass cold path, with first input soon after the first app frame:
-dart run tool/performance/run.dart --device <id> --no-prepare --start-delay-ms 0
+dart run tool/performance/run.dart --device <id> --start-delay-ms 0
 
 # Glass only; test against a 120Hz frame-work budget:
 dart run tool/performance/run.dart --device <id> --variants glass_single,glass_three_tier --budget-fps 120
@@ -134,8 +135,7 @@ dart run tool/performance/run.dart --device <id> --curves --trace
 dart run tool/performance/run.dart --device <id> --dry-run
 ```
 
-The ordinary idle glass preparation is enabled by default, matching the demo;
-`--no-prepare` disables it. Neither policy performs a hidden open/close cycle.
+The fixtures perform no explicit glass warm-up or hidden open/close cycle.
 `first_open` is always the first actual menu opening in that new process. The
 default first tap is requested 250ms after the first framework frame; change it
 with `--start-delay-ms`. Fresh process does **not** mean clearing OS file caches

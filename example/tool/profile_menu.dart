@@ -27,7 +27,7 @@ void inspect(Element element) {
   if (widget is CustomPaint && widget.painter is PuckTierCurvePainter) {
     curves = (widget.painter! as PuckTierCurvePainter).curves;
   }
-  if (widget is PuckOverlay) {
+  if (widget is PuckMenu) {
     overlayBox = element.findRenderObject() as RenderBox?;
   }
   if (widget is Icon && widget.icon == Icons.menu) {

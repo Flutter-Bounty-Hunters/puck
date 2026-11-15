@@ -1,3 +1,10 @@
+## Unreleased
+
+- Add multi-level menus with staggered opening and closing animations and adaptive arcs that can expand into full circles.
+- Add `PuckMenuController` for external control and lifecycle callbacks for expansion, collapse, dragging, release, and docking.
+- Fix abrupt arc flips, radius jumps, and unstable level spacing while dragging or docking near boundaries.
+- **Breaking:** Replace `PuckOverlay` with self-contained `PuckMenu.singleLevel` and `PuckMenu.multiLevel` layers, using `rootPuck` and `puckItems`. Move geometry and diagnostic options into `PuckMenuLayout` and `PuckMenuDebug`, and remove the root tap and long-press callbacks.
+
 ## 0.0.2
 - Add optional red anchor dots and a main-puck long-press callback; long-press the example puck to toggle the dots.
 - Balance visible circle-edge gaps against screen boundaries instead of center angles.

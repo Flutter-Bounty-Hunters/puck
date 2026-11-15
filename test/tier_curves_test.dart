@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:puck/puck.dart';
 import 'package:puck/src/puck_tier_curves.dart';
+import 'package:puck/src/spring_puck.dart';
 
 Future<int> alphaAt(PuckTierCurves curves, Offset point) async {
   final recorder = ui.PictureRecorder();
@@ -110,10 +111,10 @@ void main() {
       const root = ValueKey('root');
       await tester.pumpWidget(
         MaterialApp(
-          home: PuckOverlay(
-            showTierCurves: true,
-            puck: const ColoredBox(key: root, color: Colors.blue),
-            menuTiers: [
+          home: PuckMenu.multiLevel(
+            debug: const PuckMenuDebug(showLevelCurves: true),
+            rootPuck: const ColoredBox(key: root, color: Colors.blue),
+            puckItems: [
               for (var tier = 0; tier < 2; tier++)
                 [
                   for (var i = 0; i < 3; i++)
@@ -123,7 +124,6 @@ void main() {
                     ),
                 ],
             ],
-            child: const SizedBox.expand(),
           ),
         ),
       );
@@ -139,13 +139,23 @@ void main() {
       await tester.tap(find.byKey(root));
       await tester.pump();
       final origin = tester.getCenter(find.byKey(root));
+      Offset itemCenter(PuckTierCurveItem item) {
+        final puck = tester.widget<SpringPuck>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is SpringPuck &&
+                widget.order == item.order &&
+                widget.tier == item.tier,
+          ),
+        );
+        return tester.getCenter(find.byWidget(puck.child));
+      }
+
       for (var frame = 0; frame < 8; frame++) {
         await tester.pump(const Duration(milliseconds: 16));
         for (final item in curves.items) {
           expect(
-            (item.bounds.center -
-                    tester.getCenter(find.byKey(ValueKey(item.order))))
-                .distance,
+            (item.bounds.center - itemCenter(item)).distance,
             lessThan(0.000001),
           );
         }
@@ -160,9 +170,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 16));
         for (final item in curves.items) {
           expect(
-            (item.bounds.center -
-                    tester.getCenter(find.byKey(ValueKey(item.order))))
-                .distance,
+            (item.bounds.center - itemCenter(item)).distance,
             lessThan(0.000001),
           );
         }

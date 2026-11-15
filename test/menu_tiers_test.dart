@@ -13,23 +13,23 @@ void main() {
           (tester) async {
             await tester.binding.setSurfaceSize(Size(width, 900));
             addTearDown(() => tester.binding.setSurfaceSize(null));
-            final expanded = ValueNotifier(true);
-            addTearDown(expanded.dispose);
+            final controller = PuckMenuController()..open();
+            addTearDown(controller.dispose);
             const root = ValueKey('root');
             await tester.pumpWidget(
               MaterialApp(
-                home: PuckOverlay(
-                  initialEdge: edge,
-                  layoutPreview: true,
-                  showDebugAnchors: true,
-                  menuExpanded: expanded,
-                  menuRadius: 80,
-                  puck: const ColoredBox(key: root, color: Colors.blue),
-                  menuTiers: [
+                home: PuckMenu.multiLevel(
+                  layout: PuckMenuLayout(initialEdge: edge, levelRadius: 80),
+                  debug: const PuckMenuDebug(
+                    layoutPreview: true,
+                    showAnchors: true,
+                  ),
+                  controller: controller,
+                  rootPuck: const ColoredBox(key: root, color: Colors.blue),
+                  puckItems: [
                     for (final n in [4, 7, 12])
                       List.generate(n, (_) => const SizedBox()),
                   ],
-                  child: const SizedBox.expand(),
                 ),
               ),
             );
@@ -132,23 +132,20 @@ void main() {
         (tester) async {
           await tester.binding.setSurfaceSize(const Size(402, 752));
           addTearDown(() => tester.binding.setSurfaceSize(null));
-          final expanded = ValueNotifier(true);
-          addTearDown(expanded.dispose);
+          final controller = PuckMenuController()..open();
+          addTearDown(controller.dispose);
           const root = ValueKey('root');
           await tester.pumpWidget(
             MaterialApp(
-              home: PuckOverlay(
-                initialEdge: edge,
-                layoutPreview: preview,
-                showDebugAnchors: true,
-                menuExpanded: expanded,
-                menuRadius: 80,
-                puck: const ColoredBox(key: root, color: Colors.blue),
-                menuTiers: [
+              home: PuckMenu.multiLevel(
+                layout: PuckMenuLayout(initialEdge: edge, levelRadius: 80),
+                debug: PuckMenuDebug(layoutPreview: preview, showAnchors: true),
+                controller: controller,
+                rootPuck: const ColoredBox(key: root, color: Colors.blue),
+                puckItems: [
                   for (final count in [4, 7, 12])
                     List.generate(count, (_) => const SizedBox()),
                 ],
-                child: const SizedBox.expand(),
               ),
             ),
           );
@@ -235,22 +232,20 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(402, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final expanded = ValueNotifier(true);
-    addTearDown(expanded.dispose);
+    final controller = PuckMenuController()..open();
+    addTearDown(controller.dispose);
     const root = ValueKey('root');
     await tester.pumpWidget(
       MaterialApp(
-        home: PuckOverlay(
-          layoutPreview: true,
-          showDebugAnchors: true,
-          menuExpanded: expanded,
-          menuRadius: 80,
-          puck: const ColoredBox(key: root, color: Colors.blue),
-          menuTiers: [
+        home: PuckMenu.multiLevel(
+          debug: const PuckMenuDebug(layoutPreview: true, showAnchors: true),
+          controller: controller,
+          rootPuck: const ColoredBox(key: root, color: Colors.blue),
+          puckItems: [
             for (final n in [4, 7, 12])
               List.generate(n, (_) => const SizedBox()),
           ],
-          child: const SizedBox.expand(),
+          layout: const PuckMenuLayout(levelRadius: 80),
         ),
       ),
     );
@@ -302,18 +297,17 @@ void main() {
     const root = ValueKey('root');
     await tester.pumpWidget(
       MaterialApp(
-        home: PuckOverlay(
-          initialEdge: PuckEdge.left,
-          showDebugAnchors: true,
-          puck: const ColoredBox(key: root, color: Colors.blue),
-          menuTiers: [
+        home: PuckMenu.multiLevel(
+          layout: const PuckMenuLayout(initialEdge: PuckEdge.left),
+          debug: const PuckMenuDebug(showAnchors: true),
+          rootPuck: const ColoredBox(key: root, color: Colors.blue),
+          puckItems: [
             for (final count in [3, 4, 5])
               [
                 for (var i = 0; i < count; i++)
                   const ColoredBox(color: Colors.green),
               ],
           ],
-          child: const SizedBox.expand(),
         ),
       ),
     );
@@ -359,18 +353,17 @@ void main() {
       const root = ValueKey('root');
       await tester.pumpWidget(
         MaterialApp(
-          home: PuckOverlay(
-            initialEdge: PuckEdge.left,
-            showDebugAnchors: true,
-            puck: const ColoredBox(key: root, color: Colors.blue),
-            menuTiers: [
+          home: PuckMenu.multiLevel(
+            layout: const PuckMenuLayout(initialEdge: PuckEdge.left),
+            debug: const PuckMenuDebug(showAnchors: true),
+            rootPuck: const ColoredBox(key: root, color: Colors.blue),
+            puckItems: [
               for (final count in [3, 4, 5])
                 [
                   for (var i = 0; i < count; i++)
                     const ColoredBox(color: Colors.green),
                 ],
             ],
-            child: const SizedBox.expand(),
           ),
         ),
       );
@@ -416,18 +409,18 @@ void main() {
       const root = ValueKey('root');
       await tester.pumpWidget(
         MaterialApp(
-          home: PuckOverlay(
-            menuRadius: 80,
-            showDebugAnchors: true,
-            puck: const ColoredBox(key: root, color: Colors.blue),
-            menuTiers: [
+          home: PuckMenu.multiLevel(
+            debug: const PuckMenuDebug(showAnchors: true),
+            rootPuck: const ColoredBox(key: root, color: Colors.blue),
+            puckItems: [
               for (final count in [3, 4, 5])
                 [
                   for (var i = 0; i < count; i++)
                     const ColoredBox(color: Colors.green),
                 ],
             ],
-            child: const SizedBox.expand(),
+
+            layout: const PuckMenuLayout(levelRadius: 80),
           ),
         ),
       );
@@ -473,19 +466,17 @@ void main() {
       const root = ValueKey('root');
       await tester.pumpWidget(
         MaterialApp(
-          home: PuckOverlay(
-            menuRadius: 80,
-            initialEdge: edge,
-            showDebugAnchors: true,
-            puck: const ColoredBox(key: root, color: Colors.blue),
-            menuTiers: [
+          home: PuckMenu.multiLevel(
+            layout: PuckMenuLayout(initialEdge: edge, levelRadius: 80),
+            debug: const PuckMenuDebug(showAnchors: true),
+            rootPuck: const ColoredBox(key: root, color: Colors.blue),
+            puckItems: [
               for (final count in [3, 4, 5])
                 [
                   for (var i = 0; i < count; i++)
                     const ColoredBox(color: Colors.green),
                 ],
             ],
-            child: const SizedBox.expand(),
           ),
         ),
       );
@@ -533,19 +524,20 @@ void main() {
         const root = ValueKey('root');
         await tester.pumpWidget(
           MaterialApp(
-            home: PuckOverlay(
-              initialEdge: edge,
-              initialVerticalAlignment: alignment,
-              showDebugAnchors: true,
-              puck: const ColoredBox(key: root, color: Colors.blue),
-              menuTiers: [
+            home: PuckMenu.multiLevel(
+              layout: PuckMenuLayout(
+                initialEdge: edge,
+                initialVerticalAlignment: alignment,
+              ),
+              debug: const PuckMenuDebug(showAnchors: true),
+              rootPuck: const ColoredBox(key: root, color: Colors.blue),
+              puckItems: [
                 for (final count in [3, 4, 5])
                   [
                     for (var i = 0; i < count; i++)
                       const ColoredBox(color: Colors.green),
                   ],
               ],
-              child: const SizedBox.expand(),
             ),
           ),
         );
@@ -582,7 +574,12 @@ void main() {
             final expected =
                 painter.center +
                 Offset(math.cos(angle), math.sin(angle)) * painter.radii[tier];
-            expect((points[i] - expected).distance, lessThan(0.001));
+            expect(
+              points
+                  .map((point) => (point - expected).distance)
+                  .reduce(math.min),
+              lessThan(0.001),
+            );
             expect(points[i].dx, inInclusiveRange(24, 776));
             expect(points[i].dy, inInclusiveRange(24, 976));
           }
@@ -601,16 +598,15 @@ void main() {
     const root = ValueKey('root');
     await tester.pumpWidget(
       MaterialApp(
-        home: PuckOverlay(
-          initialVerticalAlignment: 0,
-          puck: const ColoredBox(key: root, color: Colors.blue),
-          menuTiers: [
+        home: PuckMenu.multiLevel(
+          layout: const PuckMenuLayout(initialVerticalAlignment: 0),
+          rootPuck: const ColoredBox(key: root, color: Colors.blue),
+          puckItems: [
             const [],
             for (var tier = 0; tier < 5; tier++)
               [ColoredBox(key: ValueKey(tier), color: Colors.green)],
             const [],
           ],
-          child: const SizedBox.expand(),
         ),
       ),
     );
@@ -650,13 +646,12 @@ void main() {
     Key item(int i) => ValueKey(i);
     await tester.pumpWidget(
       MaterialApp(
-        home: PuckOverlay(
-          puck: const ColoredBox(key: root, color: Colors.blue),
-          menuTiers: [
+        home: PuckMenu.multiLevel(
+          rootPuck: const ColoredBox(key: root, color: Colors.blue),
+          puckItems: [
             for (var i = 0; i < 3; i++)
               [ColoredBox(key: item(i), color: Colors.green)],
           ],
-          child: const SizedBox.expand(),
         ),
       ),
     );

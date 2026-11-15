@@ -16,22 +16,20 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(402, 778));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final expanded = ValueNotifier(true);
-      addTearDown(expanded.dispose);
+      final controller = PuckMenuController()..open();
+      addTearDown(controller.dispose);
       const root = ValueKey('root');
       await tester.pumpWidget(
         MaterialApp(
-          home: PuckOverlay(
-            layoutPreview: true,
-            showDebugAnchors: true,
-            menuExpanded: expanded,
-            menuRadius: 80,
-            puck: const ColoredBox(key: root, color: Colors.blue),
-            menuTiers: [
+          home: PuckMenu.multiLevel(
+            debug: const PuckMenuDebug(layoutPreview: true, showAnchors: true),
+            controller: controller,
+            rootPuck: const ColoredBox(key: root, color: Colors.blue),
+            puckItems: [
               for (final count in counts)
                 List.generate(count, (_) => const SizedBox()),
             ],
-            child: const SizedBox.expand(),
+            layout: const PuckMenuLayout(levelRadius: 80),
           ),
         ),
       );
@@ -75,7 +73,10 @@ void main() {
               improved.center +
               Offset(math.cos(angle), math.sin(angle)) * improved.radii[tier];
           expect(
-            (improved.anchors[offset + end] - point).distance,
+            improved.anchors
+                .sublist(offset, offset + counts[tier])
+                .map((anchor) => (anchor - point).distance)
+                .reduce(math.min),
             lessThan(1e-6),
           );
         }

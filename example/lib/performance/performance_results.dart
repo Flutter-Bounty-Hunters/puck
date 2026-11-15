@@ -96,18 +96,25 @@ class PerformanceRun {
               report['native_shader_filters_supported'],
           'interaction_readiness':
               report['interaction_readiness'] ?? 'legacy_unchecked',
+          // Older fixtures shared a layer per tier. Do not pool their frame
+          // timings with current independent-puck rendering measurements.
+          'glass_layer_policy': config['glass_layer_policy'] ?? 'per_tier',
           'prepare_glass':
               config['prepare_glass'] ??
               (data['parameters']?['no_prepare'] is bool
                   ? !(data['parameters']['no_prepare'] as bool)
                   : null),
-          for (final key in [
-            'curves',
-            'maintain_menu_state',
-            'start_delay_ms',
-            'repeats',
-          ])
+          for (final key in ['curves', 'start_delay_ms', 'repeats'])
             key: config[key] ?? data['parameters']?[key],
+          // Preserve comparability of previously saved reports without
+          // mixing their old mounted-item policy with current measurements.
+          'closed_item_policy':
+              config['closed_item_policy'] ??
+              switch (config['maintain_menu_state']) {
+                true => 'legacy_mounted',
+                false => 'dispose',
+                _ => null,
+              },
         }),
       );
       groups.putIfAbsent(signature, () => []).add(launch);
@@ -142,11 +149,8 @@ class PerformanceSetupGroup {
         ['debug', 'profile', 'release'].contains(setup['mode']) &&
         setup['platform'] != null &&
         setup['native_shader_filters_supported'] is bool &&
-        [
-          'prepare_glass',
-          'curves',
-          'maintain_menu_state',
-        ].every((key) => setup[key] is bool) &&
+        ['prepare_glass', 'curves'].every((key) => setup[key] is bool) &&
+        setup['closed_item_policy'] is String &&
         [
           'start_delay_ms',
           'repeats',
@@ -161,12 +165,11 @@ class PerformanceSetupGroup {
         : '${viewport['width']} × ${viewport['height']}';
     final hz = setup['display_refresh_rate_hz'];
     final prep = setup['prepare_glass'];
+    final glass = setup['glass_layer_policy'] == 'individual_pucks'
+        ? 'individual glass layers'
+        : 'per-level glass layers';
     return '$size · ${hz == null ? 'unknown Hz' : '$hz Hz'} · ${setup['mode']} · '
-        '${prep == null
-            ? 'unknown preparation'
-            : prep == true
-            ? 'prepared'
-            : 'unprepared'}';
+        '$glass${prep == true ? ' · prepared' : ''}';
   }
 }
 

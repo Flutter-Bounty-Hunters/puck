@@ -7,22 +7,19 @@ void main() => runApp(
 
 /// A live view of the real layout solver, without menu items or item springs.
 class MenuLayoutDemo extends StatefulWidget {
-  const MenuLayoutDemo({super.key, this.embedded = false});
-
-  /// Shares the main app's background and tab bar when embedded.
-  final bool embedded;
+  const MenuLayoutDemo({super.key});
 
   @override
   State<MenuLayoutDemo> createState() => _MenuLayoutDemoState();
 }
 
 class _MenuLayoutDemoState extends State<MenuLayoutDemo> {
-  final _expanded = ValueNotifier(true);
+  var _controller = PuckMenuController()..open();
   int _reset = 0;
 
   @override
   void dispose() {
-    _expanded.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -36,36 +33,37 @@ class _MenuLayoutDemoState extends State<MenuLayoutDemo> {
     child: Stack(
       fit: StackFit.expand,
       children: [
-        if (!widget.embedded)
-          Scaffold(
-            appBar: AppBar(
-              title: const Text('Menu layout', style: TextStyle(fontSize: 17)),
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              actions: [
-                IconButton(
-                  tooltip: 'Reset layout',
-                  icon: const Icon(Icons.restart_alt),
-                  onPressed: () {
-                    _expanded.value = true;
-                    setState(() => _reset++);
-                  },
-                ),
-              ],
-            ),
+        Scaffold(
+          appBar: AppBar(
+            centerTitle: true,
+            title: const Text('Menu layout', style: TextStyle(fontSize: 17)),
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            actions: [
+              IconButton(
+                tooltip: 'Reset layout',
+                icon: const Icon(Icons.restart_alt),
+                onPressed: () {
+                  setState(() {
+                    _controller.dispose();
+                    _controller = PuckMenuController()..open();
+                    _reset++;
+                  });
+                },
+              ),
+            ],
           ),
+        ),
         SafeArea(
-          child: PuckOverlay(
+          child: PuckMenu.multiLevel(
             key: ValueKey(_reset),
-            layoutPreview: true,
-            menuExpanded: _expanded,
-            menuRadius: 80,
-            menuItemDiameter: 48,
-            menuTiers: [
+            debug: const PuckMenuDebug(layoutPreview: true),
+            controller: _controller,
+            puckItems: [
               for (final count in [4, 7, 12])
                 List.generate(count, (_) => const SizedBox()),
             ],
-            puck: const DecoratedBox(
+            rootPuck: const DecoratedBox(
               key: ValueKey('layout-root'),
               decoration: BoxDecoration(
                 color: Color(0xFF28354C),
@@ -76,7 +74,7 @@ class _MenuLayoutDemoState extends State<MenuLayoutDemo> {
               ),
               child: Icon(Icons.open_with, color: Color(0xFFEDF2FF), size: 24),
             ),
-            child: const SizedBox.expand(),
+            layout: const PuckMenuLayout(levelRadius: 80, puckDiameter: 48),
           ),
         ),
         const Positioned(

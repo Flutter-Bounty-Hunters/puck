@@ -137,7 +137,6 @@ void main() {
     final options = runner.RunnerOptions([
       '--repeats',
       '3',
-      '--no-prepare',
       '--curves',
       '--device-connection',
       'attached',
@@ -154,7 +153,7 @@ void main() {
     expect(route.path, '/glass_three_tier');
     expect(route.queryParameters, containsPair('automated', '1'));
     expect(route.queryParameters, containsPair('repeats', '3'));
-    expect(route.queryParameters, containsPair('prepare', '0'));
+    expect(route.queryParameters, isNot(contains('prepare')));
     expect(route.queryParameters, containsPair('curves', '1'));
     expect(runner.RunnerOptions(['--cold-runs=2']).coldRuns, 2);
   });

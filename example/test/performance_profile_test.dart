@@ -145,6 +145,27 @@ void main() {
             .measurementCount,
         1,
       );
+      final legacy = launch('glass_three_tier');
+      (legacy['report']['config'] as Map)['maintain_menu_state'] = true;
+      final current = launch('glass_three_tier');
+      (current['report']['config'] as Map)['closed_item_policy'] = 'dispose';
+      final independent = launch('glass_three_tier');
+      (independent['report']['config'] as Map).addAll(<String, Object>{
+        'closed_item_policy': 'dispose',
+        'glass_layer_policy': 'individual_pucks',
+      });
+      final history = PerformanceRun({
+        'schema_version': 2,
+        'device': {'name': 'Phone'},
+        'cases': [legacy, current, independent],
+      });
+      expect(history.comparisonSetups, hasLength(3));
+      expect(
+        history.comparisonSetups.map(
+          (s) => s.configuration['closed_item_policy'],
+        ),
+        ['legacy_mounted', 'dispose', 'dispose'],
+      );
     },
   );
 }
