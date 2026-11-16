@@ -30,6 +30,8 @@ class PuckMenu extends StatefulWidget {
   const PuckMenu.singleLevel({
     super.key,
     this.controller,
+    this.visible = true,
+    this.itemLayerBuilder,
     this.id,
     required this.rootPuck,
     required List<Widget> puckItems,
@@ -45,6 +47,8 @@ class PuckMenu extends StatefulWidget {
   const PuckMenu.multiLevel({
     super.key,
     this.controller,
+    this.visible = true,
+    this.itemLayerBuilder,
     this.id,
     required this.rootPuck,
     required List<List<Widget>> puckItems,
@@ -59,6 +63,16 @@ class PuckMenu extends StatefulWidget {
   /// External commands and lifecycle notifications for this menu.
   /// The caller owns and disposes the controller.
   final PuckMenuController? controller;
+
+  /// Whether this menu is present. The root pops in with a small overshoot,
+  /// and shrinks away before being hidden. Keep the widget mounted while
+  /// changing this value so its exit animation can finish.
+  final bool visible;
+
+  /// Optionally wrap the animated items in one shared rendering layer.
+  /// The child is a full-size Stack; the root is painted separately above it.
+  /// The wrapper is mounted only while menu items are present, including exit.
+  final Widget Function(BuildContext context, Widget child)? itemLayerBuilder;
 
   /// Optional persistent identity for this menu. A stable ID automatically
   /// saves and restores its docking edge and proportional vertical position,
@@ -196,8 +210,56 @@ class PuckMenuDebug {
 }
 
 class _PuckMenuState extends State<PuckMenu>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late final Ticker _ticker = createTicker(_tick);
+  late final AnimationController _presence = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+    reverseDuration: const Duration(milliseconds: 280),
+  )..addListener(_presenceChanged);
+  late final Animation<double> _rootScale = _presence.drive(
+    CurveTween(curve: const Cubic(0.175, 0.885, 0.32, 1.275)),
+  );
+
+  late final AnimationController _rootPress = AnimationController.unbounded(
+    vsync: this,
+    value: 1,
+  )..addListener(_rootPressChanged);
+
+  void _rootPressChanged() => setState(() {});
+
+  void _pressRoot() {
+    _rootPress.animateTo(
+      1.08,
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _releaseRoot() {
+    if (_rootPress.value == 1 && !_rootPress.isAnimating) return;
+    _rootPress.animateWith(
+      SpringSimulation(
+        const SpringDescription(mass: 1, stiffness: 500, damping: 22),
+        _rootPress.value,
+        1,
+        _rootPress.velocity,
+        snapToEnd: true,
+      ),
+    );
+  }
+
+  void _presenceChanged() {
+    if (_presence.isDismissed && !widget.visible) {
+      _menuPhase = _MenuPhase.closed;
+      _pendingCollapse.clear();
+      _pendingExpansion.clear();
+      _opening = false;
+      _finishMenuTransition(_menuGeneration);
+    }
+    setState(() {});
+  }
+
   final _cables = PuckCables();
   final _curves = PuckLevelCurves();
   Size? _size;
@@ -217,6 +279,7 @@ class _PuckMenuState extends State<PuckMenu>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.visible) _presence.forward();
     _loadAnchor();
     _attachController();
     if (widget.controller != null) {
@@ -420,6 +483,7 @@ class _PuckMenuState extends State<PuckMenu>
   }
 
   void _setExpanded(bool expanded) {
+    if (expanded && !widget.visible) return;
     if (expanded == _expanded) return;
     setState(() {
       _menuGeneration++;
@@ -1188,6 +1252,15 @@ class _PuckMenuState extends State<PuckMenu>
   @override
   void didUpdateWidget(covariant PuckMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.visible != widget.visible) {
+      if (widget.visible) {
+        _presence.forward();
+      } else {
+        _setExpanded(false);
+        _releaseRoot();
+        _presence.reverse();
+      }
+    }
     if (oldWidget.id != widget.id) _loadAnchor(reset: true);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller?._detach(this);
@@ -1228,11 +1301,26 @@ class _PuckMenuState extends State<PuckMenu>
     _curves.dispose();
     _cables.dispose();
     _ticker.dispose();
+    _presence.dispose();
+    _rootPress.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.visible && _presence.isDismissed) {
+      return const SizedBox.expand();
+    }
+    return IgnorePointer(
+      ignoring: !widget.visible,
+      child: ExcludeSemantics(
+        excluding: !widget.visible,
+        child: _buildMenu(context),
+      ),
+    );
+  }
+
+  Widget _buildMenu(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         assert(
@@ -1446,7 +1534,15 @@ class _PuckMenuState extends State<PuckMenu>
                   ),
                 ),
               ),
-            ...menuWidgets,
+            if (widget.itemLayerBuilder != null && menuWidgets.isNotEmpty)
+              Positioned.fill(
+                child: widget.itemLayerBuilder!(
+                  context,
+                  Stack(clipBehavior: Clip.none, children: menuWidgets),
+                ),
+              )
+            else
+              ...menuWidgets,
             // Paint the parent after every menu item, including while their
             // springs overlap it during expansion and collapse.
             Positioned(
@@ -1454,44 +1550,57 @@ class _PuckMenuState extends State<PuckMenu>
               top: _position.dy,
               width: widget.layout.diameter,
               height: widget.layout.diameter,
-              child: ClipOval(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _toggleMenu,
-                  onPanDown: (details) {
-                    // A late disk read must not move a puck the user touched.
-                    _anchorRequest++;
-                    _pendingRestoredAnchor = null;
-                    _ticker.stop();
-                    _grabOffset = details.localPosition;
-                  },
-                  onPanStart: (_) {
-                    _dragging = true;
-                    _awaitingSettle = true;
-                    widget.controller?._dragStarted();
-                  },
-                  onPanUpdate: (details) {
-                    // A deliberate drag supersedes the pre-keyboard location.
-                    _keyboardOriginalY = null;
-                    if (_keyboardHeight > 0) {
-                      _draggedWithKeyboard = true;
-                    }
-                    final box = context.findRenderObject()! as RenderBox;
-                    setState(() {
-                      _position = _constrainVertical(
-                        box.globalToLocal(details.globalPosition) -
-                            _grabOffset!,
+              child: Transform.scale(
+                scale: _rootScale.value * _rootPress.value,
+                transformHitTests: false,
+                child: ClipOval(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _toggleMenu,
+                    onPanDown: (details) {
+                      _pressRoot();
+                      // A late disk read must not move a puck the user touched.
+                      _anchorRequest++;
+                      _pendingRestoredAnchor = null;
+                      _ticker.stop();
+                      _grabOffset = details.localPosition;
+                    },
+                    onPanStart: (_) {
+                      _dragging = true;
+                      _awaitingSettle = true;
+                      widget.controller?._dragStarted();
+                    },
+                    onPanUpdate: (details) {
+                      // A deliberate drag supersedes the pre-keyboard location.
+                      _keyboardOriginalY = null;
+                      if (_keyboardHeight > 0) {
+                        _draggedWithKeyboard = true;
+                      }
+                      final box = context.findRenderObject()! as RenderBox;
+                      setState(() {
+                        _position = _constrainVertical(
+                          box.globalToLocal(details.globalPosition) -
+                              _grabOffset!,
+                        );
+                      });
+                    },
+                    onPanEnd: (details) {
+                      _releaseRoot();
+                      _dock(details.velocity.pixelsPerSecond);
+                    },
+                    onPanCancel: () {
+                      _releaseRoot();
+                      _dock(Offset.zero);
+                    },
+                    onTapUp: (_) {
+                      _releaseRoot();
+                      PuckOpeningTrace.measure(
+                        'tap.up.dock',
+                        () => _dock(Offset.zero),
                       );
-                    });
-                  },
-                  onPanEnd: (details) =>
-                      _dock(details.velocity.pixelsPerSecond),
-                  onPanCancel: () => _dock(Offset.zero),
-                  onTapUp: (_) => PuckOpeningTrace.measure(
-                    'tap.up.dock',
-                    () => _dock(Offset.zero),
+                    },
+                    child: widget.rootPuck,
                   ),
-                  child: widget.rootPuck,
                 ),
               ),
             ),

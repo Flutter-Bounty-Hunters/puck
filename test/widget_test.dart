@@ -76,6 +76,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
   }
 
   testWidgets('starts 10 percent offscreen and root taps toggle the menu', (
