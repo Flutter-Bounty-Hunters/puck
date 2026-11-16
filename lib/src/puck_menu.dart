@@ -356,6 +356,8 @@ class _PuckMenuState extends State<PuckMenu>
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
     final top = box.localToGlobal(Offset.zero).dy;
+    // Retained pages outside a viewport can have a singular paint transform.
+    if (!top.isFinite) return;
     if (top != _globalTop) setState(() => _globalTop = top);
   }
 

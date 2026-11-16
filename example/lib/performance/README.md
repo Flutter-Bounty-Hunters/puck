@@ -94,9 +94,9 @@ dart run tool/performance/review.dart --device <id> --results <file-or-directory
 Keep the command running while reviewing. It serves the saved file to the app
 through a temporary local endpoint, so simulators and phones can read the
 computer's results without copying extra run files or adding assets to the app.
-Physical devices need to share the computer's local network. Desktop launches
-can also discover files directly from the project directory. Debug and glass
-fallback results are labeled; failed launches are excluded from comparisons.
+Physical devices need to share the computer's local network. Without the review
+launcher's explicit live endpoint, both apps load their bundled results asset.
+Debug and glass fallback results are labeled; failed launches are excluded from comparisons.
 Large optional traces remain in the original file; the app displays their count.
 
 ## Fresh launches
@@ -255,3 +255,39 @@ restart.
 flutter test test/performance_test.dart
 flutter test test/performance_runner_test.dart
 ```
+
+## Embedding the results UI
+
+Import `package:puck_example/performance/performance_ui.dart` and use
+`PerformanceResultsView`. It includes the dashboard, details, chart guide,
+result loading, demo launcher, and its own themed navigation. Set `active` to
+false while its host tab is inactive so it does not handle system back events.
+The optional `loader` supports another results source.
+
+Both `PerformanceResultsApp` and the example app's Performance tab use this
+shared view. The example creates it only on the first visit and keeps its
+results, scroll position, and navigation state when switching tabs.
+
+## Published results asset
+
+Both the standalone app and the example's Performance tab load
+`assets/performance/results/latest.json` by default. It contains real saved
+measurements, including frame samples and logs; no local server or host build
+folder is needed in an installed app.
+
+Successful, non-diagnostic profile runs automatically update this asset after
+saving the complete original report. Failed/interrupted runs and focused opening
+profiles leave the existing asset untouched. Large trace payloads remain in the
+original report; the asset retains their counts.
+
+To publish an existing report, run from `example`:
+
+```sh
+dart run tool/performance/publish.dart
+# Or select an explicit report:
+dart run tool/performance/publish.dart build/performance_runs/my-run.json
+```
+
+The default selects the newest complete successful profile benchmark by its
+measurement date. Rebuild the app after publishing to include the new snapshot.
+The review launcher still supplies a live endpoint when explicitly used.

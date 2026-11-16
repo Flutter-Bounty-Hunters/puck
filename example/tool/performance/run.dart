@@ -4,7 +4,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:puck_example/performance/performance_asset.dart';
+
 import 'cpu_profile.dart';
+import 'publish.dart' as published;
 
 typedef Json = Map<String, dynamic>;
 
@@ -707,6 +710,11 @@ Future<int> runSuite(RunnerOptions options, Directory example) async {
         : 'complete';
     result['finished_utc'] = DateTime.now().toUtc().toIso8601String();
     await checkpoint();
+  }
+  if (result['status'] == 'complete' && !options.profileOpening) {
+    final asset = File('${example.path}/$performanceResultsAsset');
+    await published.publishPerformanceRun(output, asset);
+    stdout.writeln('Published app asset: ${asset.path}');
   }
   stdout.writeln('Results: ${output.path}');
   stdout.writeln(

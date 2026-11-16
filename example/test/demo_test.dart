@@ -65,7 +65,7 @@ void main() {
       await tester.tap(tab('Layout'));
       await tester.pumpAndSettle();
       await tester.tap(tab('Puck'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       for (final button in buttons) {
         expect(button, findsOneWidget);
         expect(tester.getRect(button).width, closeTo(56, 0.01));
@@ -229,7 +229,7 @@ void main() {
   ) async {
     await mountMenus(tester);
     await tester.pumpAndSettle();
-    final bubble = find.bySemanticsLabel('Three menu circles');
+    final bubble = find.byKey(const ValueKey('center-bubble-icon'));
     final center = tester.getCenter(bubble);
     final messenger = find.byTooltip('Hide messenger menu');
     final top = tester.getCenter(messenger);
@@ -371,6 +371,64 @@ void main() {
     },
   );
 
+  testWidgets('returning from dark tabs shows Puck button colors immediately', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      PuckDemo(performanceResultsLoader: () async => null),
+    );
+    await tester.pumpAndSettle();
+    final ids = ['messenger', 'art', 'massive', 'performance', 'dev'];
+    List<Color> colors({required bool foreground}) => [
+      for (final id in ids)
+        (foreground
+                ? tester
+                      .widget<IconButton>(
+                        find.descendant(
+                          of: find.byKey(ValueKey('$id-menu-toggle')),
+                          matching: find.byType(IconButton),
+                        ),
+                      )
+                      .style!
+                      .foregroundColor!
+                : tester
+                      .widget<IconButton>(
+                        find.descendant(
+                          of: find.byKey(ValueKey('$id-menu-toggle')),
+                          matching: find.byType(IconButton),
+                        ),
+                      )
+                      .style!
+                      .backgroundColor!)
+            .resolve({})!,
+    ];
+    final originalFills = colors(foreground: false);
+    final originalIcons = colors(foreground: true);
+    for (final destination in ['Layout', 'Performance']) {
+      await tester.tap(tab(destination));
+      await tester.pumpAndSettle();
+      await tester.tap(tab('Puck'));
+      await tester.pump();
+      for (
+        var frame = 0;
+        frame < 25 &&
+            find
+                .byKey(const ValueKey('messenger-menu-toggle'))
+                .evaluate()
+                .isEmpty;
+        frame++
+      ) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      for (var frame = 0; frame < 9; frame++) {
+        expect(colors(foreground: false), originalFills);
+        expect(colors(foreground: true), originalIcons);
+        await tester.pump(const Duration(milliseconds: 40));
+      }
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'activation colors fade through intermediate colors in both modes',
     (tester) async {
@@ -436,7 +494,7 @@ void main() {
       expect(background(), Colors.white);
       expect(find.byKey(const ValueKey('art-root')), findsNothing);
       final bubbleCenter = tester.getCenter(
-        find.bySemanticsLabel('Three menu circles'),
+        find.byKey(const ValueKey('center-bubble-icon')),
       );
       final artCenter = tester.getCenter(find.byTooltip('Show art menu'));
       expect(artCenter.dx, greaterThan(bubbleCenter.dx));
@@ -526,7 +584,7 @@ void main() {
       await mountMenus(tester);
       await tester.pumpAndSettle();
       final center = tester.getCenter(
-        find.bySemanticsLabel('Three menu circles'),
+        find.byKey(const ValueKey('center-bubble-icon')),
       );
       final button = find.byTooltip('Hide massive menu');
       final position = tester.getCenter(button);
@@ -558,7 +616,7 @@ void main() {
     (tester) async {
       await mountMenus(tester);
       final center = tester.getCenter(
-        find.bySemanticsLabel('Three menu circles'),
+        find.byKey(const ValueKey('center-bubble-icon')),
       );
       final button = find.byTooltip('Show performance menu');
       final position = tester.getCenter(button);
@@ -620,7 +678,7 @@ void main() {
     (tester) async {
       await mountMenus(tester);
       final center = tester.getCenter(
-        find.bySemanticsLabel('Three menu circles'),
+        find.byKey(const ValueKey('center-bubble-icon')),
       );
       final button = find.byTooltip('Show dev menu');
       final position = tester.getCenter(button);
@@ -854,6 +912,65 @@ void main() {
     expect(find.byTooltip('Chat with Maya'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'tabs slide horizontally and swipes keep tab selection and state',
+    (tester) async {
+      var loads = 0;
+      await tester.pumpWidget(
+        PuckDemo(
+          performanceResultsLoader: () async {
+            loads++;
+            return null;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      final puckState = tester.state(find.byKey(const ValueKey('chat-menu')));
+      final pager = find.byKey(const ValueKey('example-pages'));
+      final controller = tester.widget<PageView>(pager).controller!;
+      expect(loads, 0);
+      await tester.tap(tab('Layout'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(controller.page, greaterThan(0));
+      expect(controller.page, lessThan(1));
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('example-page'))).dx,
+        lessThan(0),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<glass.GlassTabBar>(find.byType(glass.GlassTabBar))
+            .selectedIndex,
+        1,
+      );
+      final layoutState = tester.state(find.byType(MenuLayoutDemo));
+      await tester.drag(pager, const Offset(650, 0));
+      await tester.pumpAndSettle();
+      expect(controller.page, closeTo(0, 0.001));
+      expect(
+        tester
+            .widget<glass.GlassTabBar>(find.byType(glass.GlassTabBar))
+            .selectedIndex,
+        0,
+      );
+      expect(
+        tester.state(find.byKey(const ValueKey('chat-menu'))),
+        same(puckState),
+      );
+      await tester.tap(tab('Performance'));
+      await tester.pumpAndSettle();
+      expect(controller.page, closeTo(2, 0.001));
+      expect(loads, 1);
+      await tester.drag(pager, const Offset(650, 0));
+      await tester.pumpAndSettle();
+      expect(controller.page, closeTo(1, 0.001));
+      expect(tester.state(find.byType(MenuLayoutDemo)), same(layoutState));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('layout tab opens, preserves position, resets, and returns', (
     tester,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'performance_results.dart';
 import 'profile_chart.dart';
 import 'results_details.dart';
+import 'results_theme.dart';
 
 export 'results_details.dart' show PerformanceSampleScreen;
 
@@ -97,16 +98,7 @@ class _PerformanceResultsScreenState extends State<PerformanceResultsScreen> {
 
   @override
   Widget build(BuildContext context) => Theme(
-    data: ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: _background,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _mint,
-        brightness: Brightness.dark,
-        surface: _surface,
-      ),
-      useMaterial3: true,
-    ),
+    data: performanceResultsTheme(),
     child: Builder(
       builder: (context) => Scaffold(
         appBar: AppBar(

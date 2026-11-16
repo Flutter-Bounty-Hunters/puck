@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show Drag;
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:puck/puck.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as glass;
@@ -9,6 +10,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as glass;
 import 'layout_demo.dart' show MenuLayoutDemo;
 import 'performance_monitor_menu.dart';
 import 'menu_root_puck.dart';
+import 'performance/performance_ui.dart';
 
 const _devMenuColor = Color(0xFFB6FF00);
 
@@ -70,7 +72,12 @@ const _themeSwatches = [
 enum _DemoMenu { messenger, art, massive, performance, dev }
 
 class PuckDemo extends StatefulWidget {
-  const PuckDemo({super.key});
+  const PuckDemo({
+    super.key,
+    this.performanceResultsLoader = loadLatestPerformanceRun,
+  });
+
+  final ResultsLoader performanceResultsLoader;
   @override
   State<PuckDemo> createState() => _PuckDemoState();
 }
@@ -98,7 +105,9 @@ class _PuckDemoState extends State<PuckDemo>
   Color? _themeColor;
   bool _darkMode = false;
   int _tabIndex = 0;
-  bool _layoutVisited = false;
+  final _pages = PageController();
+  bool _paging = false;
+  Drag? _pageDrag;
   String? _selectedContact;
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
   final _keyboardFocus = FocusNode(debugLabel: 'Puck keyboard toggle');
@@ -146,16 +155,64 @@ class _PuckDemoState extends State<PuckDemo>
   void _selectTab(int index) {
     _cancelMessengerDemo();
     _keyboardFocus.unfocus();
-    setState(() {
-      _tabIndex = index;
-      if (index == 1) _layoutVisited = true;
-    });
+    _pages.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  // Use a pan recognizer like the pucks, so their deeper recognizers win
+  // gesture arbitration. ScrollPosition still supplies native page physics.
+  void _startPageDrag(DragStartDetails details) {
+    _pageDrag = _pages.position.drag(details, () => _pageDrag = null);
+  }
+
+  void _updatePageDrag(DragUpdateDetails details) {
+    _pageDrag?.update(
+      DragUpdateDetails(
+        sourceTimeStamp: details.sourceTimeStamp,
+        globalPosition: details.globalPosition,
+        localPosition: details.localPosition,
+        delta: Offset(details.delta.dx, 0),
+        primaryDelta: details.delta.dx,
+      ),
+    );
+  }
+
+  void _endPageDrag(DragEndDetails details) {
+    final velocity = details.velocity.pixelsPerSecond.dx;
+    _pageDrag?.end(
+      DragEndDetails(
+        velocity: Velocity(pixelsPerSecond: Offset(velocity, 0)),
+        primaryVelocity: velocity,
+      ),
+    );
+  }
+
+  void _cancelPageDrag() => _pageDrag?.cancel();
+
+  void _pageChanged(int index) {
+    setState(() => _tabIndex = index);
+  }
+
+  bool _pageScroll(ScrollNotification notification) {
+    if (!mounted || notification.depth != 0) return false;
+    if (notification is ScrollStartNotification) {
+      _cancelMessengerDemo();
+      _keyboardFocus.unfocus();
+      if (!_paging) setState(() => _paging = true);
+    } else if (notification is ScrollEndNotification && _paging) {
+      setState(() => _paging = false);
+    }
+    return false;
   }
 
   @override
   void dispose() {
     _messengerDemoTimer?.cancel();
     _messengerDemo.dispose();
+    _pages.dispose();
     for (final controller in _menuControllers.values) {
       controller.removeListener(this);
       controller.dispose();
@@ -310,13 +367,13 @@ class _PuckDemoState extends State<PuckDemo>
       scaffoldMessengerKey: _messengerKey,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
-      themeMode: _darkMode || _tabIndex == 1 ? ThemeMode.dark : ThemeMode.light,
+      themeMode: _darkMode || _tabIndex != 0 ? ThemeMode.dark : ThemeMode.light,
       // The standalone tab widget loads its shaders on demand. Do not add
       // initialization or shader warm-up ahead of the app's first frame.
       builder: (context, child) => glass.LiquidGlassWidgets.wrap(
         brightnessResolver: Theme.maybeBrightnessOf,
         theme: glass.GlassThemeData.ios26(
-          brightness: _darkMode || _tabIndex == 1
+          brightness: _darkMode || _tabIndex != 0
               ? Brightness.dark
               : Brightness.light,
         ),
@@ -325,18 +382,49 @@ class _PuckDemoState extends State<PuckDemo>
       home: Scaffold(
         extendBody: true,
         resizeToAvoidBottomInset: false,
-        body: IndexedStack(
-          index: _tabIndex,
-          children: [
-            TickerMode(
-              enabled: _tabIndex == 0,
-              child: _examplePage(glassSettings, glassAppearance, iconColor),
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onPanStart: _startPageDrag,
+          onPanUpdate: _updatePageDrag,
+          onPanEnd: _endPageDrag,
+          onPanCancel: _cancelPageDrag,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _pageScroll,
+            child: PageView.builder(
+              key: const ValueKey('example-pages'),
+              controller: _pages,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: _pageChanged,
+              itemCount: 3,
+              itemBuilder: (context, index) {
+                final page = switch (index) {
+                  0 => AnimatedTheme(
+                    data: pageTheme,
+                    duration: const Duration(milliseconds: 200),
+                    child: _examplePage(
+                      glassSettings,
+                      glassAppearance,
+                      iconColor,
+                    ),
+                  ),
+                  1 => const MenuLayoutDemo(),
+                  _ => SafeArea(
+                    top: false,
+                    child: PerformanceResultsView(
+                      loader: widget.performanceResultsLoader,
+                      active: _tabIndex == 2,
+                    ),
+                  ),
+                };
+                final visible = _paging || _tabIndex == index;
+                return _KeptAliveTabPage(
+                  key: ValueKey('example-tab-$index'),
+                  visible: visible,
+                  child: TickerMode(enabled: visible, child: page),
+                );
+              },
             ),
-            if (_layoutVisited)
-              TickerMode(enabled: _tabIndex == 1, child: const MenuLayoutDemo())
-            else
-              const SizedBox.expand(),
-          ],
+          ),
         ),
         bottomNavigationBar: SafeArea(
           top: false,
@@ -360,6 +448,11 @@ class _PuckDemoState extends State<PuckDemo>
                     icon: Icon(Icons.radar_outlined),
                     activeIcon: Icon(Icons.radar),
                     label: 'Layout',
+                  ),
+                  glass.GlassTab(
+                    icon: Icon(Icons.insights_outlined),
+                    activeIcon: Icon(Icons.insights),
+                    label: 'Performance',
                   ),
                 ],
               ),
@@ -438,6 +531,7 @@ class _PuckDemoState extends State<PuckDemo>
                   onTogglePerformanceMenu: _togglePerformanceMenu,
                   onToggleMassiveMenu: _toggleMassiveMenu,
                   activeRingColor: _themeColor ?? const Color(0xFFD1D5DB),
+                  inactiveTint: _themeColor,
                   onToggleArtMenu: _toggleArtMenu,
                   onToggleMessenger: _toggleMessengerMenu,
                 ),
@@ -671,6 +765,32 @@ class _PuckDemoState extends State<PuckDemo>
   );
 }
 
+class _KeptAliveTabPage extends StatefulWidget {
+  const _KeptAliveTabPage({
+    super.key,
+    required this.visible,
+    required this.child,
+  });
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  State<_KeptAliveTabPage> createState() => _KeptAliveTabPageState();
+}
+
+class _KeptAliveTabPageState extends State<_KeptAliveTabPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Offstage(offstage: !widget.visible, child: widget.child);
+  }
+}
+
 class _DevControlPuck extends StatelessWidget {
   const _DevControlPuck({
     super.key,
@@ -763,6 +883,7 @@ class _MenuToggles extends StatefulWidget {
     required this.artMenuVisible,
     required this.onToggleArtMenu,
     required this.activeRingColor,
+    required this.inactiveTint,
     required this.massiveMenuVisible,
     required this.onToggleMassiveMenu,
     required this.performanceMenuVisible,
@@ -777,6 +898,7 @@ class _MenuToggles extends StatefulWidget {
   final bool artMenuVisible;
   final VoidCallback onToggleArtMenu;
   final Color activeRingColor;
+  final Color? inactiveTint;
   final bool massiveMenuVisible;
   final VoidCallback onToggleMassiveMenu;
   final bool performanceMenuVisible;
@@ -836,6 +958,7 @@ class _MenuTogglesState extends State<_MenuToggles>
                         key: const ValueKey('messenger-menu-toggle'),
                         active: widget.messengerVisible,
                         activeRingColor: widget.activeRingColor,
+                        inactiveTint: widget.inactiveTint,
                         simulatedTapProgress: widget.messengerDemoProgress,
                         neutralInactive: false,
                         tooltip: widget.messengerVisible
@@ -856,6 +979,7 @@ class _MenuTogglesState extends State<_MenuToggles>
                         key: const ValueKey('art-menu-toggle'),
                         active: widget.artMenuVisible,
                         activeRingColor: widget.activeRingColor,
+                        inactiveTint: widget.inactiveTint,
                         tooltip: widget.artMenuVisible
                             ? 'Hide art menu'
                             : 'Show art menu',
@@ -874,6 +998,7 @@ class _MenuTogglesState extends State<_MenuToggles>
                         key: const ValueKey('massive-menu-toggle'),
                         active: widget.massiveMenuVisible,
                         activeRingColor: widget.activeRingColor,
+                        inactiveTint: widget.inactiveTint,
                         tooltip: widget.massiveMenuVisible
                             ? 'Hide massive menu'
                             : 'Show massive menu',
@@ -887,6 +1012,7 @@ class _MenuTogglesState extends State<_MenuToggles>
                         key: const ValueKey('performance-menu-toggle'),
                         active: widget.performanceMenuVisible,
                         activeRingColor: widget.activeRingColor,
+                        inactiveTint: widget.inactiveTint,
                         tooltip: widget.performanceMenuVisible
                             ? 'Hide performance menu'
                             : 'Show performance menu',
@@ -899,6 +1025,7 @@ class _MenuTogglesState extends State<_MenuToggles>
                         key: const ValueKey('dev-menu-toggle'),
                         active: widget.devMenuVisible,
                         activeRingColor: widget.activeRingColor,
+                        inactiveTint: widget.inactiveTint,
                         tooltip: widget.devMenuVisible
                             ? 'Hide dev menu'
                             : 'Show dev menu',
@@ -993,6 +1120,7 @@ class _MenuActivationButton extends StatefulWidget {
     required this.onPressed,
     required this.iconBuilder,
     this.spectrum = false,
+    this.inactiveTint,
     this.neutralInactive = true,
     this.simulatedTapProgress,
   });
@@ -1004,6 +1132,7 @@ class _MenuActivationButton extends StatefulWidget {
   final VoidCallback onPressed;
   final Widget Function(Color) iconBuilder;
   final bool spectrum;
+  final Color? inactiveTint;
   final bool neutralInactive;
   final double? simulatedTapProgress;
 
@@ -1037,6 +1166,15 @@ class _MenuActivationButtonState extends State<_MenuActivationButton> {
     final demoTime = (widget.simulatedTapProgress ?? 0) * 1500;
     final simulatedPress = demoTime >= 820 && demoTime < 1030;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final neutralBackground = dark
+        ? const Color(0xFF29292E)
+        : const Color(0xFFE5E7EB);
+    final inactiveBackground = widget.inactiveTint == null
+        ? neutralBackground
+        : Color.alphaBlend(
+            widget.inactiveTint!.withValues(alpha: dark ? 0.20 : 0.16),
+            neutralBackground,
+          );
     final foreground = widget.active
         ? Colors.white
         : widget.neutralInactive
@@ -1046,9 +1184,7 @@ class _MenuActivationButtonState extends State<_MenuActivationButton> {
         ? Colors.transparent
         : widget.active
         ? widget.accent
-        : dark
-        ? const Color(0xFF29292E)
-        : const Color(0xFFE5E7EB);
+        : inactiveBackground;
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(begin: foreground, end: foreground),
       duration: const Duration(milliseconds: 200),
@@ -1205,6 +1341,7 @@ class _MenuCircles extends StatelessWidget {
     image: true,
     child: Icon(
       Icons.bubble_chart,
+      key: const ValueKey('center-bubble-icon'),
       size: 36,
       color: Theme.of(context).colorScheme.primary,
     ),
