@@ -17,8 +17,20 @@ Finder tab(String label) => find
     .descendant(of: find.byType(glass.GlassTabBar), matching: find.text(label))
     .first;
 
+Future<void> mountGallery(
+  WidgetTester tester, [
+  PuckDemo app = const PuckDemo(),
+]) async {
+  await tester.pumpWidget(app);
+  tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
+  await tester.pump();
+  // Gallery scenarios begin in light mode; Puck is independently always dark.
+  await tester.tap(find.byTooltip('Switch to light mode'));
+  await tester.pump();
+}
+
 Future<void> mountMenus(WidgetTester tester) async {
-  await tester.pumpWidget(const PuckDemo());
+  await mountGallery(tester);
   await tester.pumpAndSettle();
   await tester.tap(find.byTooltip('Show messenger menu'));
   await tester.tap(find.byTooltip('Show massive menu'));
@@ -35,7 +47,7 @@ void main() {
   testWidgets(
     'activation buttons pop in clockwise once and keep the bubble visible',
     (tester) async {
-      await tester.pumpWidget(const PuckDemo());
+      await mountGallery(tester);
       final buttons = [
         find.byKey(const ValueKey('messenger-menu-toggle')),
         find.byKey(const ValueKey('art-menu-toggle')),
@@ -64,7 +76,7 @@ void main() {
       expect(find.byKey(const ValueKey('chat-root')), findsNothing);
       await tester.tap(tab('Layout'));
       await tester.pumpAndSettle();
-      await tester.tap(tab('Puck'));
+      await tester.tap(tab('Gallery'));
       await tester.pumpAndSettle();
       for (final button in buttons) {
         expect(button, findsOneWidget);
@@ -77,7 +89,7 @@ void main() {
   testWidgets('fresh launch demonstrates one collapsed Messenger activation', (
     tester,
   ) async {
-    await tester.pumpWidget(const PuckDemo());
+    await mountGallery(tester);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('chat-root')), findsNothing);
     expect(find.byKey(const ValueKey('art-root')), findsNothing);
@@ -132,7 +144,7 @@ void main() {
   testWidgets('manual activation cancels the launch demonstration', (
     tester,
   ) async {
-    await tester.pumpWidget(const PuckDemo());
+    await mountGallery(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Show art menu'));
     await tester.pumpAndSettle();
@@ -147,7 +159,7 @@ void main() {
   testWidgets(
     'a real tap interrupts the moving pointer without a second activation',
     (tester) async {
-      await tester.pumpWidget(const PuckDemo());
+      await mountGallery(tester);
       await tester.pump(const Duration(seconds: 2));
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.byKey(const ValueKey('messenger-tap-demo')), findsOneWidget);
@@ -162,19 +174,19 @@ void main() {
     },
   );
 
-  testWidgets('leaving Puck or disposing cancels a pending demonstration', (
+  testWidgets('leaving Gallery or disposing cancels a pending demonstration', (
     tester,
   ) async {
-    await tester.pumpWidget(const PuckDemo());
+    await mountGallery(tester);
     await tester.pumpAndSettle();
     await tester.tap(tab('Layout'));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 3));
-    await tester.tap(tab('Puck'));
+    await tester.tap(tab('Gallery'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('chat-root')), findsNothing);
     await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(const PuckDemo());
+    await mountGallery(tester);
     await tester.pump(const Duration(seconds: 2));
     expect(find.byKey(const ValueKey('messenger-tap-demo')), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
@@ -195,10 +207,10 @@ void main() {
       final bar = tester.getRect(find.byType(glass.GlassTabBar));
       expect(bar.center.dx, 201);
       expect(bar.bottom, lessThanOrEqualTo(840));
-      expect(bar.width, lessThanOrEqualTo(320));
-      final title = tester.widget<Text>(find.text('PUCK'));
+      expect(bar.width, lessThanOrEqualTo(400));
+      final title = tester.widget<Text>(find.text('GALLERY'));
       expect(title.style!.fontWeight, FontWeight.w900);
-      expect(tester.getCenter(find.text('PUCK')).dx, 201);
+      expect(tester.getCenter(find.text('GALLERY')).dx, 201);
       final contentIcon = find.descendant(
         of: find.bySemanticsLabel('Three menu circles'),
         matching: find.byIcon(Icons.bubble_chart),
@@ -250,7 +262,7 @@ void main() {
     expect(tester.getCenter(bubble), center);
     await tester.tap(tab('Layout'));
     await tester.pumpAndSettle();
-    await tester.tap(tab('Puck'));
+    await tester.tap(tab('Gallery'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('chat-root')), findsNothing);
     await tester.tap(find.byTooltip('Show messenger menu'));
@@ -374,7 +386,8 @@ void main() {
   testWidgets('returning from dark tabs shows Puck button colors immediately', (
     tester,
   ) async {
-    await tester.pumpWidget(
+    await mountGallery(
+      tester,
       PuckDemo(performanceResultsLoader: () async => null),
     );
     await tester.pumpAndSettle();
@@ -407,7 +420,7 @@ void main() {
     for (final destination in ['Layout', 'Performance']) {
       await tester.tap(tab(destination));
       await tester.pumpAndSettle();
-      await tester.tap(tab('Puck'));
+      await tester.tap(tab('Gallery'));
       await tester.pump();
       for (
         var frame = 0;
@@ -559,7 +572,7 @@ void main() {
       final tintedBackground = background();
       await tester.tap(tab('Layout'));
       await tester.pumpAndSettle();
-      await tester.tap(tab('Puck'));
+      await tester.tap(tab('Gallery'));
       await tester.pumpAndSettle();
       expect(background(), tintedBackground);
       await tester.tap(find.byTooltip('Show art menu'));
@@ -662,7 +675,7 @@ void main() {
       }
       await tester.tap(tab('Layout'));
       await tester.pumpAndSettle();
-      await tester.tap(tab('Puck'));
+      await tester.tap(tab('Gallery'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('performance-ui')), findsOneWidget);
       await tester.tap(find.byTooltip('Hide performance menu'));
@@ -907,7 +920,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('chat-root')), findsNothing);
     expect(find.byType(MenuLayoutDemo), findsOneWidget);
-    await tester.tap(tab('Puck'));
+    await tester.tap(tab('Gallery'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Chat with Maya'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -917,7 +930,8 @@ void main() {
     'tabs slide horizontally and swipes keep tab selection and state',
     (tester) async {
       var loads = 0;
-      await tester.pumpWidget(
+      await mountGallery(
+        tester,
         PuckDemo(
           performanceResultsLoader: () async {
             loads++;
@@ -933,8 +947,8 @@ void main() {
       await tester.tap(tab('Layout'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(controller.page, greaterThan(0));
-      expect(controller.page, lessThan(1));
+      expect(controller.page, greaterThan(1));
+      expect(controller.page, lessThan(2));
       expect(
         tester.getTopLeft(find.byKey(const ValueKey('example-page'))).dx,
         lessThan(0),
@@ -944,17 +958,17 @@ void main() {
         tester
             .widget<glass.GlassTabBar>(find.byType(glass.GlassTabBar))
             .selectedIndex,
-        1,
+        2,
       );
       final layoutState = tester.state(find.byType(MenuLayoutDemo));
       await tester.drag(pager, const Offset(650, 0));
       await tester.pumpAndSettle();
-      expect(controller.page, closeTo(0, 0.001));
+      expect(controller.page, closeTo(1, 0.001));
       expect(
         tester
             .widget<glass.GlassTabBar>(find.byType(glass.GlassTabBar))
             .selectedIndex,
-        0,
+        1,
       );
       expect(
         tester.state(find.byKey(const ValueKey('chat-menu'))),
@@ -962,11 +976,11 @@ void main() {
       );
       await tester.tap(tab('Performance'));
       await tester.pumpAndSettle();
-      expect(controller.page, closeTo(2, 0.001));
+      expect(controller.page, closeTo(3, 0.001));
       expect(loads, 1);
       await tester.drag(pager, const Offset(650, 0));
       await tester.pumpAndSettle();
-      expect(controller.page, closeTo(1, 0.001));
+      expect(controller.page, closeTo(2, 0.001));
       expect(tester.state(find.byType(MenuLayoutDemo)), same(layoutState));
       expect(tester.takeException(), isNull);
     },
@@ -984,7 +998,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MenuLayoutDemo), findsOneWidget);
     expect(find.text('Menu layout'), findsOneWidget);
-    expect(find.text('PUCK'), findsNothing);
+    expect(find.text('GALLERY'), findsNothing);
     expect(find.byTooltip('Show keyboard'), findsNothing);
     expect(find.byType(SpringPuck), findsNothing);
     expect(find.byType(LiquidGlassLayer), findsNothing);
@@ -1003,7 +1017,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(layout().center.dx, lessThan(initial.dx));
     final dragged = layout().center;
-    await tester.tap(tab('Puck'));
+    await tester.tap(tab('Gallery'));
     await tester.pumpAndSettle();
     expect(find.byType(MenuLayoutDemo), findsNothing);
     expect(find.byType(TextField), findsNothing);
@@ -1015,10 +1029,10 @@ void main() {
     await tester.tap(find.byTooltip('Reset layout'));
     await tester.pumpAndSettle();
     expect(layout().center, initial);
-    await tester.tap(tab('Puck'));
+    await tester.tap(tab('Gallery'));
     await tester.pumpAndSettle();
     expect(find.byType(MenuLayoutDemo), findsNothing);
-    expect(find.text('PUCK'), findsOneWidget);
+    expect(find.text('GALLERY'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1056,7 +1070,7 @@ void main() {
       await tester.tap(tab('Layout'));
       await tester.pumpAndSettle();
       expect(tester.testTextInput.isVisible, isFalse);
-      await tester.tap(tab('Puck'));
+      await tester.tap(tab('Gallery'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 3));
       expect(find.byType(SpringPuck, skipOffstage: false), findsNothing);
@@ -1082,7 +1096,7 @@ void main() {
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(tester.takeException(), isNull);
-      expect(find.byType(LiquidGlassLayer, skipOffstage: false), findsNothing);
+      expect(find.byType(LiquidGlassLayer), findsNothing);
       final rootCenter = tester.getCenter(find.byIcon(Icons.menu));
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pump();

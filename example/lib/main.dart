@@ -10,6 +10,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as glass;
 import 'layout_demo.dart' show MenuLayoutDemo;
 import 'performance_monitor_menu.dart';
 import 'menu_root_puck.dart';
+import 'puck_root_light.dart';
 import 'performance/performance_ui.dart';
 
 const _devMenuColor = Color(0xFFB6FF00);
@@ -98,12 +99,14 @@ class _PuckDemoState extends State<PuckDemo>
   bool _demonstratingMessenger = false;
   Timer? _messengerDemoTimer;
   bool _demoActivatedMessenger = false;
+  bool _visitedGallery = false;
   late final AnimationController _messengerDemo = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1500),
   )..addListener(_animateMessengerDemo);
   Color? _themeColor;
-  bool _darkMode = false;
+  bool _darkMode = true;
+  bool _rootGlassReady = WidgetsBinding.instance.firstFrameRasterized;
   int _tabIndex = 0;
   final _pages = PageController();
   bool _paging = false;
@@ -111,16 +114,35 @@ class _PuckDemoState extends State<PuckDemo>
   String? _selectedContact;
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
   final _keyboardFocus = FocusNode(debugLabel: 'Puck keyboard toggle');
+  final _bubbleLightKey = GlobalKey();
+  final _titleLight = PuckLightAnchorHandle(intensity: 0.85);
+  final _tabLights = List.generate(
+    4,
+    (_) => PuckLightAnchorHandle(intensity: 0.45),
+  );
+  late final _extraLights = [_titleLight, ..._tabLights];
 
   @override
   void initState() {
     super.initState();
     _keyboardFocus.addListener(_keyboardChanged);
+    // A post-frame callback runs before the engine necessarily paints. Wait
+    // for rasterization so cold GPU setup cannot hold the launch screen open.
+    if (!_rootGlassReady) {
+      WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) {
+        if (mounted) setState(() => _rootGlassReady = true);
+      });
+    }
     for (final controller in _menuControllers.values) {
       controller.addListener(this);
     }
+  }
+
+  void _startGalleryDemo() {
+    if (_visitedGallery) return;
+    _visitedGallery = true;
     _messengerDemoTimer = Timer(const Duration(seconds: 2), () {
-      if (!mounted || _tabIndex != 0) return;
+      if (!mounted || _tabIndex != 1) return;
       setState(() => _demonstratingMessenger = true);
       _messengerDemo.forward();
       _messengerDemoTimer = null;
@@ -194,6 +216,7 @@ class _PuckDemoState extends State<PuckDemo>
 
   void _pageChanged(int index) {
     setState(() => _tabIndex = index);
+    if (index == 1) _startGalleryDemo();
   }
 
   bool _pageScroll(ScrollNotification notification) {
@@ -361,19 +384,31 @@ class _PuckDemoState extends State<PuckDemo>
       brightness: brightness,
       tint: _themeColor?.withValues(alpha: 0.28) ?? const Color(0x00808080),
     );
+    final puckTheme = _theme(Brightness.dark);
+    final puckIconColor = _themeColor == null
+        ? puckTheme.colorScheme.onSurface
+        : puckTheme.colorScheme.primary;
+    final puckGlassSettings = LiquidGlassSettings.ios27Regular(
+      brightness: Brightness.dark,
+      tintAmount: 0.7,
+    );
+    final puckGlassAppearance = LiquidGlassAppearance.ios27Regular(
+      brightness: Brightness.dark,
+      tint: _themeColor?.withValues(alpha: 0.28) ?? const Color(0x00808080),
+    );
     return MaterialApp(
       title: 'Puck',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: _messengerKey,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
-      themeMode: _darkMode || _tabIndex != 0 ? ThemeMode.dark : ThemeMode.light,
+      themeMode: _darkMode || _tabIndex != 1 ? ThemeMode.dark : ThemeMode.light,
       // The standalone tab widget loads its shaders on demand. Do not add
       // initialization or shader warm-up ahead of the app's first frame.
       builder: (context, child) => glass.LiquidGlassWidgets.wrap(
         brightnessResolver: Theme.maybeBrightnessOf,
         theme: glass.GlassThemeData.ios26(
-          brightness: _darkMode || _tabIndex != 0
+          brightness: _darkMode || _tabIndex != 1
               ? Brightness.dark
               : Brightness.light,
         ),
@@ -395,24 +430,33 @@ class _PuckDemoState extends State<PuckDemo>
               controller: _pages,
               physics: const NeverScrollableScrollPhysics(),
               onPageChanged: _pageChanged,
-              itemCount: 3,
+              itemCount: 4,
               itemBuilder: (context, index) {
                 final page = switch (index) {
                   0 => AnimatedTheme(
+                    data: puckTheme,
+                    duration: const Duration(milliseconds: 200),
+                    child: _puckPage(
+                      puckGlassSettings,
+                      puckGlassAppearance,
+                      puckIconColor,
+                    ),
+                  ),
+                  1 => AnimatedTheme(
                     data: pageTheme,
                     duration: const Duration(milliseconds: 200),
-                    child: _examplePage(
+                    child: _galleryPage(
                       glassSettings,
                       glassAppearance,
                       iconColor,
                     ),
                   ),
-                  1 => const MenuLayoutDemo(),
+                  2 => const MenuLayoutDemo(),
                   _ => SafeArea(
                     top: false,
                     child: PerformanceResultsView(
                       loader: widget.performanceResultsLoader,
-                      active: _tabIndex == 2,
+                      active: _tabIndex == 3,
                     ),
                   ),
                 };
@@ -432,26 +476,63 @@ class _PuckDemoState extends State<PuckDemo>
           child: Center(
             heightFactor: 1,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
+              constraints: const BoxConstraints(maxWidth: 400),
               child: glass.GlassTabBar.bottom(
                 selectedIndex: _tabIndex,
                 onTabSelected: _selectTab,
                 horizontalPadding: 12,
                 verticalPadding: 12,
-                tabs: const [
+                tabs: [
                   glass.GlassTab(
-                    icon: Icon(Icons.bubble_chart_outlined),
-                    activeIcon: Icon(Icons.bubble_chart),
+                    icon: PuckLightAnchor(
+                      handle: _tabLights[0],
+                      wholeContent: true,
+                      child: const Icon(Icons.bubble_chart_outlined),
+                    ),
+                    activeIcon: PuckLightAnchor(
+                      handle: _tabLights[0],
+                      wholeContent: true,
+                      child: const Icon(Icons.bubble_chart),
+                    ),
                     label: 'Puck',
                   ),
                   glass.GlassTab(
-                    icon: Icon(Icons.radar_outlined),
-                    activeIcon: Icon(Icons.radar),
+                    icon: PuckLightAnchor(
+                      handle: _tabLights[1],
+                      wholeContent: true,
+                      child: const Icon(Icons.grid_view_outlined),
+                    ),
+                    activeIcon: PuckLightAnchor(
+                      handle: _tabLights[1],
+                      wholeContent: true,
+                      child: const Icon(Icons.grid_view_rounded),
+                    ),
+                    label: 'Gallery',
+                  ),
+                  glass.GlassTab(
+                    icon: PuckLightAnchor(
+                      handle: _tabLights[2],
+                      wholeContent: true,
+                      child: const Icon(Icons.radar_outlined),
+                    ),
+                    activeIcon: PuckLightAnchor(
+                      handle: _tabLights[2],
+                      wholeContent: true,
+                      child: const Icon(Icons.radar),
+                    ),
                     label: 'Layout',
                   ),
                   glass.GlassTab(
-                    icon: Icon(Icons.insights_outlined),
-                    activeIcon: Icon(Icons.insights),
+                    icon: PuckLightAnchor(
+                      handle: _tabLights[3],
+                      wholeContent: true,
+                      child: const Icon(Icons.insights_outlined),
+                    ),
+                    activeIcon: PuckLightAnchor(
+                      handle: _tabLights[3],
+                      wholeContent: true,
+                      child: const Icon(Icons.insights),
+                    ),
                     label: 'Performance',
                   ),
                 ],
@@ -463,7 +544,204 @@ class _PuckDemoState extends State<PuckDemo>
     );
   }
 
-  Widget _examplePage(
+  Widget _puckPage(
+    LiquidGlassSettings glassSettings,
+    LiquidGlassAppearance glassAppearance,
+    Color iconColor,
+  ) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Scaffold(
+        key: const ValueKey('puck-page'),
+        backgroundColor: _theme(Brightness.dark).scaffoldBackgroundColor,
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          centerTitle: true,
+          foregroundColor: iconColor,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          title: PuckLightAnchor(
+            handle: _titleLight,
+            child: const Text(
+              'PUCK',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1,
+              ),
+            ),
+          ),
+        ),
+        body: SafeArea(
+          top: false,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Center(
+                child: SizedBox(
+                  key: _bubbleLightKey,
+                  child: const _MenuCircles(),
+                ),
+              ),
+              if (_tabIndex == 0) _keyboardInput(),
+            ],
+          ),
+        ),
+      ),
+      SafeArea(
+        child: PuckMenu.singleLevel(
+          key: const ValueKey('puck-controls-menu'),
+          id: 'puck-controls',
+          rootClipBehavior: Clip.none,
+          layout: const PuckMenuLayout(
+            initialEdge: PuckEdge.right,
+            initialVerticalAlignment: 0.30,
+            levelRadius: 156,
+            puckDiameter: 48,
+          ),
+          debug: PuckMenuDebug(showAnchors: _showDebugAnchors),
+          itemLayerBuilder: (context, child) => LiquidGlassLayer(
+            settings: glassSettings,
+            defaultAppearance: glassAppearance,
+            child: child,
+          ),
+          rootPuck: PuckRootLight(
+            primaryLightKey: _bubbleLightKey,
+            additionalLights: _extraLights,
+            enabled: _rootGlassReady,
+            brightness: Brightness.dark,
+            child: Semantics(
+              label: 'Puck menu',
+              button: true,
+              child: ColoredBox(
+                key: const ValueKey('puck-controls-root'),
+                color: Colors.transparent,
+                child: _rootGlassReady
+                    ? LiquidGlassLayer(
+                        settings: glassSettings.copyWith(
+                          // Keep the wider lens: fitting a 64px circle would
+                          // cap the bevel at 16px and refraction at 32px.
+                          refractionFitsShape: false,
+                          refractionHeight: 25,
+                          refractionAmount: 75,
+                          highlight: 0.85,
+                          bevelShadowStrength: 0.12,
+                        ),
+                        defaultAppearance: glassAppearance,
+                        child: LiquidGlass(
+                          appearance: LiquidGlassAppearance.ios27Regular(
+                            brightness: Brightness.dark,
+                            tint: const Color(0x14808080),
+                          ),
+                          shape: const LiquidOval(),
+                          child: const DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Color(0x24000000),
+                                  Color(0x14FFFFFF),
+                                  Color(0x47FFFFFF),
+                                ],
+                                stops: [0.66, 0.82, 0.94, 1],
+                              ),
+                            ),
+                            child: SizedBox.expand(),
+                          ),
+                        ),
+                      )
+                    : const DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0x14808080),
+                          border: Border.fromBorderSide(
+                            BorderSide(color: Color(0x2EFFFFFF)),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+          ),
+          puckItems: [
+            _glassControl(
+              key: 'puck-keyboard',
+              tooltip: _keyboardFocus.hasFocus
+                  ? 'Hide keyboard'
+                  : 'Show keyboard',
+              icon: _KeyboardDirectionIcon(expanded: _keyboardFocus.hasFocus),
+              iconColor: iconColor,
+              onPressed: _toggleKeyboard,
+            ),
+            _glassControl(
+              key: 'puck-debug',
+              tooltip: _showDebugAnchors
+                  ? 'Hide debug visuals'
+                  : 'Show debug visuals',
+              icon: Icon(
+                _showDebugAnchors
+                    ? Icons.bug_report
+                    : Icons.bug_report_outlined,
+              ),
+              iconColor: iconColor,
+              onPressed: _toggleDebugAnchors,
+            ),
+            ..._themePucks(brightness: Brightness.dark),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _glassControl({
+    required String key,
+    required String tooltip,
+    required Widget icon,
+    required Color iconColor,
+    required VoidCallback onPressed,
+  }) => LiquidGlass(
+    key: ValueKey(key),
+    shape: const LiquidOval(),
+    child: Material(
+      type: MaterialType.transparency,
+      child: IconButton(
+        tooltip: tooltip,
+        color: iconColor,
+        onPressed: onPressed,
+        icon: icon,
+      ),
+    ),
+  );
+
+  List<Widget> _themePucks({Brightness? brightness}) => [
+    for (final swatch in _themeSwatches)
+      _GlassThemeSwatch(
+        key: ValueKey('theme-${swatch.name}'),
+        name: swatch.name,
+        color: swatch.color,
+        selected: _themeColor == swatch.color,
+        brightness:
+            brightness ?? (_darkMode ? Brightness.dark : Brightness.light),
+        onTap: () => setState(() {
+          _themeColor = _themeColor == swatch.color ? null : swatch.color;
+        }),
+      ),
+  ];
+
+  // Both pages use the same keyboard control; only the visible page owns it.
+  Widget _keyboardInput() => Offstage(
+    child: ExcludeSemantics(
+      child: TextField(
+        key: const ValueKey('keyboard-input'),
+        focusNode: _keyboardFocus,
+        textInputAction: TextInputAction.done,
+        enableInteractiveSelection: false,
+        onSubmitted: (_) => _keyboardFocus.unfocus(),
+      ),
+    ),
+  );
+
+  Widget _galleryPage(
     LiquidGlassSettings glassSettings,
     LiquidGlassAppearance glassAppearance,
     Color iconColor,
@@ -479,7 +757,7 @@ class _PuckDemoState extends State<PuckDemo>
           centerTitle: true,
           foregroundColor: iconColor,
           title: const Text(
-            'PUCK',
+            'GALLERY',
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w900,
@@ -536,17 +814,7 @@ class _PuckDemoState extends State<PuckDemo>
                   onToggleMessenger: _toggleMessengerMenu,
                 ),
               ),
-              Offstage(
-                child: ExcludeSemantics(
-                  child: TextField(
-                    key: const ValueKey('keyboard-input'),
-                    focusNode: _keyboardFocus,
-                    textInputAction: TextInputAction.done,
-                    enableInteractiveSelection: false,
-                    onSubmitted: (_) => _keyboardFocus.unfocus(),
-                  ),
-                ),
-              ),
+              if (_tabIndex == 1) _keyboardInput(),
             ],
           ),
         ),
@@ -635,19 +903,7 @@ class _PuckDemoState extends State<PuckDemo>
                     ),
                   ),
                 ),
-                for (final swatch in _themeSwatches)
-                  _GlassThemeSwatch(
-                    key: ValueKey('theme-${swatch.name}'),
-                    name: swatch.name,
-                    color: swatch.color,
-                    selected: _themeColor == swatch.color,
-                    brightness: _darkMode ? Brightness.dark : Brightness.light,
-                    onTap: () => setState(() {
-                      _themeColor = _themeColor == swatch.color
-                          ? null
-                          : swatch.color;
-                    }),
-                  ),
+                ..._themePucks(),
               ],
             ),
             PuckMenu.multiLevel(
@@ -694,7 +950,7 @@ class _PuckDemoState extends State<PuckDemo>
               key: const ValueKey('performance-menu-container'),
               controller: _menuControllers[_DemoMenu.performance],
               visible: _showPerformanceMenu,
-              active: _tabIndex == 0,
+              active: _tabIndex == 1,
               showDebugAnchors: _showDebugAnchors,
             ),
             PuckMenu.singleLevel(

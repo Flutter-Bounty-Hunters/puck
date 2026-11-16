@@ -34,6 +34,7 @@ class PuckMenu extends StatefulWidget {
     this.itemLayerBuilder,
     this.id,
     required this.rootPuck,
+    this.rootClipBehavior = Clip.hardEdge,
     required List<Widget> puckItems,
     this.layout = const PuckMenuLayout(),
     this.arcStyle = const ArcStyle(),
@@ -51,6 +52,7 @@ class PuckMenu extends StatefulWidget {
     this.itemLayerBuilder,
     this.id,
     required this.rootPuck,
+    this.rootClipBehavior = Clip.hardEdge,
     required List<List<Widget>> puckItems,
     this.layout = const PuckMenuLayout(),
     this.arcStyle = const ArcStyle(),
@@ -83,6 +85,11 @@ class PuckMenu extends StatefulWidget {
 
   /// Developer-provided content, clipped to [PuckMenuLayout.diameter].
   final Widget rootPuck;
+
+  /// How root content is clipped to its circular touch target.
+  /// Set to [Clip.none] for decorative light or shadows that paint outside it.
+  /// The root's hit area remains circular, and the menu still clips at its bounds.
+  final Clip rootClipBehavior;
 
   /// Menu contents grouped into levels ordered nearest to farthest.
   ///
@@ -1556,6 +1563,7 @@ class _PuckMenuState extends State<PuckMenu>
                 scale: _rootScale.value * _rootPress.value,
                 transformHitTests: false,
                 child: ClipOval(
+                  clipBehavior: widget.rootClipBehavior,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: _toggleMenu,
