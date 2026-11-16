@@ -17,19 +17,23 @@
 
 ---
 
-Put your app's actions within reach with a floating menu people can move.
-Tap to reveal actions, drag the puck to a comfortable spot, and release it to
-spring back to the nearest screen edge.
+<img align="left" src="https://github.com/user-attachments/assets/deecb815-043f-48f9-b5d0-c2ea6f6f3766" width="320" hspace="32" alt="Puck demo" />
 
-- **One level or several.** Start with a few actions or spread them across multiple levels.
-- **Adapts to the space.** Menu arcs adjust around screen edges, safe areas, and the keyboard.
-- **Your widgets, your style.** Build the root and items from icons, photos, glass, or any Flutter widgets.
-- **Spring animation.** Items fan out and return beneath the root, with staggered motion across levels.
-- **Remembers its place.** Give a menu an `id` to restore its last docked position, even after an app restart.
+### A Menu Where You Need It!
+ * Anchor to the left or right edge of the screen.
+ * Drag around your obstacles.
+ * Expand your menu when needed.
+ * Menu layout optimizes for available space.
+ * Menu avoids the keyboard when up, and moves back when down.
+ * Use a menu for quick theme checks, layout debugging, etc.
 
-## Add a floating menu
+<br clear="all" />
+<br />
+<br />
 
-Place Puck above your page and supply the widgets for your actions:
+## Get Started
+
+Place a `PuckMenu` above your app content. You can use a `Stack` to layer it on top.
 
 ```dart
 import 'package:puck/puck.dart';
