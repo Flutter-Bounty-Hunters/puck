@@ -3,6 +3,65 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:puck/puck.dart';
 
 void main() {
+  testWidgets(
+    'unclipped root decoration keeps circular touch target and drag',
+    (tester) async {
+      var backgroundTaps = 0;
+      final controller = PuckMenuController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => backgroundTaps++,
+                  child: const ColoredBox(color: Colors.black),
+                ),
+              ),
+              PuckMenu.singleLevel(
+                controller: controller,
+                rootClipBehavior: Clip.none,
+                rootPuck: const DecoratedBox(
+                  key: ValueKey('decorated-root'),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white,
+                        blurRadius: 20,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                ),
+                puckItems: const [ColoredBox(color: Colors.blue)],
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final root = find.byKey(const ValueKey('decorated-root'));
+      final initial = tester.getRect(root);
+      await tester.tapAt(initial.topLeft + const Offset(3, 3));
+      await tester.tapAt(initial.center - const Offset(70, 0));
+      await tester.pumpAndSettle();
+      expect(backgroundTaps, 2);
+      expect(controller.status, PuckMenuStatus.collapsed);
+      await tester.tap(root);
+      await tester.pumpAndSettle();
+      expect(controller.status, PuckMenuStatus.expanded);
+      await tester.drag(root, const Offset(-250, 100));
+      await tester.pumpAndSettle();
+      expect(tester.getCenter(root).dy, greaterThan(initial.center.dy));
+      expect(backgroundTaps, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('independent menu layers pass background touches through', (
     tester,
   ) async {
@@ -76,6 +135,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
   }
 
   testWidgets('starts 10 percent offscreen and root taps toggle the menu', (

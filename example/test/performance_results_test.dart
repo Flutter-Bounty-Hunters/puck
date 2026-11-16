@@ -8,7 +8,9 @@ import 'package:puck_example/performance/performance_results.dart';
 import 'package:puck_example/performance/results_app.dart';
 import 'package:puck_example/performance/profile_chart.dart';
 import 'package:puck_example/performance/results_files.dart';
-import 'package:puck_example/performance/results_screen.dart';
+import 'package:puck_example/performance/performance_ui.dart';
+import 'package:puck_example/main.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as glass;
 
 Map<String, dynamic> fixture() => {
   'schema_version': 2,
@@ -132,6 +134,65 @@ void main() {
         '{"schema_version":2,"started_utc":"2027-01-01T00:00:00Z",',
       );
       expect((await latestPerformanceFile(directory))?.path, broken.path);
+    },
+  );
+
+  testWidgets(
+    'Performance tab reuses results UI and preserves its navigation',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(402, 874);
+      addTearDown(tester.view.reset);
+      var loads = 0;
+      await tester.pumpWidget(
+        PuckDemo(
+          performanceResultsLoader: () async {
+            loads++;
+            return PerformanceRun(fixture());
+          },
+        ),
+      );
+      expect(
+        find.byType(PerformanceResultsView, skipOffstage: false),
+        findsNothing,
+      );
+      expect(loads, 0);
+      await tester.pumpAndSettle();
+      Finder tab(String name) => find
+          .descendant(
+            of: find.byType(glass.GlassTabBar),
+            matching: find.text(name),
+          )
+          .first;
+      await tester.tap(tab('Performance'));
+      await tester.pumpAndSettle();
+      expect(loads, 1);
+      expect(find.byType(PerformanceResultsView), findsOneWidget);
+      expect(find.text('Menu profiles'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('profile-solid_single')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byTooltip('Try a demo'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Solid · 1 level').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(PerformanceDemo), findsOneWidget);
+      await tester.tap(tab('Puck'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PerformanceDemo), findsNothing);
+      expect(find.text('PUCK'), findsOneWidget);
+      await tester.tap(tab('Performance'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PerformanceDemo), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Menu profiles'), findsOneWidget);
+      expect(loads, 1);
+      await tester.tap(find.byTooltip('Refresh results'));
+      await tester.pumpAndSettle();
+      expect(loads, 2);
+      expect(tester.takeException(), isNull);
     },
   );
 

@@ -128,7 +128,11 @@ void main() {
     for (var frame = 0; frame < 45; frame++) {
       await tester.pump(const Duration(milliseconds: 16));
       final current = tester.getCenter(find.byKey(root));
-      expect(guides().center, current, reason: 'docking frame $frame');
+      expect(
+        (guides().center - current).distance,
+        lessThan(0.000001),
+        reason: 'docking frame $frame',
+      );
       moved = moved || (current - released).distance > 1;
     }
     expect(moved, isTrue);

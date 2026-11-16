@@ -1,45 +1,27 @@
 import 'package:flutter/material.dart';
 
-import 'performance_demo.dart';
-import 'performance_results.dart';
-import 'results_screen.dart';
+import 'performance_ui.dart';
 
 class PerformanceResultsApp extends StatelessWidget {
   const PerformanceResultsApp({
     super.key,
     this.loader = loadLatestPerformanceRun,
   });
+
   final ResultsLoader loader;
+
+  MaterialPageRoute<void> _resultsRoute() => MaterialPageRoute<void>(
+    settings: const RouteSettings(name: '/'),
+    builder: (_) => PerformanceResultsView(loader: loader),
+  );
+
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0C111B),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF5ADDB0),
-        brightness: Brightness.dark,
-        surface: const Color(0xFF151D2B),
-      ),
-      useMaterial3: true,
-    ),
-    onGenerateInitialRoutes: (_) => [
-      MaterialPageRoute<void>(
-        builder: (_) => Builder(
-          builder: (context) => PerformanceResultsScreen(
-            loader: loader,
-            onOpenDemo: (variant) => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => PerformanceDemo(
-                  config: PerformanceConfig(variant: variant),
-                  onExit: () => Navigator.of(context).pop(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ],
-    routes: {'/': (_) => PerformanceResultsScreen(loader: loader)},
+    theme: performanceResultsTheme(),
+    // The standalone launcher uses /results; it still starts one dashboard.
+    onGenerateInitialRoutes: (_) => [_resultsRoute()],
+    onGenerateRoute: (settings) =>
+        settings.name == '/' ? _resultsRoute() : null,
   );
 }

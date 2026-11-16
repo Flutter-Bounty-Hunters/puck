@@ -3,8 +3,12 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import 'results_files.dart';
+import 'performance_asset.dart';
+
+export 'performance_asset.dart' show performanceResultsAsset;
 
 const resultsUrl = String.fromEnvironment('PUCK_PERFORMANCE_RESULTS_URL');
 const scenarioLabels = {
@@ -393,22 +397,17 @@ double? percentile(Iterable<double> input, double percentile) {
   return sorted[((sorted.length - 1) * percentile).ceil()];
 }
 
-PerformanceRun parsePerformanceRun(String source) {
-  final data = jsonDecode(source) as Map<String, dynamic>;
-  // Traces stay in the original run file. Keep only their count in the viewer
-  // so large trace captures do not remain in the UI isolate's heap.
-  for (final entry in data['cases'] as List? ?? []) {
-    if (entry is Map) {
-      entry['trace_count'] = (entry.remove('traces') as List? ?? []).length;
-      entry['opening_timeline_event_count'] =
-          (entry.remove('opening_timeline') as Map?)?['traceEvents']?.length ??
-          0;
-      entry['cpu_profile_count'] =
-          (entry.remove('cpu_profiles') as List? ?? []).length;
-    }
-  }
-  data.remove('summary'); // Derive charts from raw reports, excluding failures.
-  return PerformanceRun(data);
+PerformanceRun parsePerformanceRun(String source) => PerformanceRun(
+  compactPerformanceRun(jsonDecode(source) as Map<String, dynamic>),
+);
+
+/// The same published measurement snapshot is bundled in both app entry points.
+Future<PerformanceRun> loadBundledPerformanceRun({AssetBundle? bundle}) async {
+  final source = await (bundle ?? rootBundle).loadString(
+    performanceResultsAsset,
+    cache: false,
+  );
+  return compute(parsePerformanceRun, source);
 }
 
 Future<PerformanceRun?> loadLatestPerformanceRun() async {
@@ -433,16 +432,5 @@ Future<PerformanceRun?> loadLatestPerformanceRun() async {
       client.close(force: true);
     }
   }
-  // Desktop launches can read the host files directly. Simulators/phones use
-  // the review launcher, which supplies a local results endpoint.
-  for (final path in [
-    'build/performance_runs',
-    'example/build/performance_runs',
-  ]) {
-    final file = await latestPerformanceFile(Directory(path));
-    if (file != null) {
-      return compute(parsePerformanceRun, await file.readAsString());
-    }
-  }
-  return null;
+  return loadBundledPerformanceRun();
 }
