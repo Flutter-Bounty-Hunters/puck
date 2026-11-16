@@ -17,28 +17,18 @@
 
 ---
 
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <img
-        src="https://github.com/user-attachments/assets/deecb815-043f-48f9-b5d0-c2ea6f6f3766"
-        alt="Puck demo"
-        width="320"
-      />
-    </td>
-    <td width="67%" valign="top">
-      <h2>A Menu Where You Need It!</h2>
-      <ul>
-        <li>Anchor to the left or right edge of the screen.</li>
-        <li>Drag around your obstacles.</li>
-        <li>Expand your menu when needed.</li>
-        <li>Menu layout optimizes for available space.</li>
-        <li>Menu avoids the keyboard when up, and moves back when down.</li>
-        <li>Use a menu for quick theme checks, layout debugging, etc.</li>
-      </ul>
-    </td>
-  </tr>
-</table>
+<img align="left" src="https://github.com/user-attachments/assets/deecb815-043f-48f9-b5d0-c2ea6f6f3766" width="320" hspace="32" alt="Puck demo" />
+
+### A Menu Where You Need It!
+ * Anchor to the left or right edge of the screen.
+ * Drag around your obstacles.
+ * Expand your menu when needed.
+ * Menu layout optimizes for available space.
+ * Menu avoids the keyboard when up, and moves back when down.
+ * Use a menu for quick theme checks, layout debugging, etc.
+
+<br clear="all" />
+<br />
 
 Put your app's actions within reach with a floating menu people can move.
 Tap to reveal actions, drag the puck to a comfortable spot, and release it to
