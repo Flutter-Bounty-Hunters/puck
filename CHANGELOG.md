@@ -1,11 +1,7 @@
-## Unreleased
-
-- Add an optional `itemLayerBuilder` so animated menu items can share a rendering layer while the root remains separate.
-
+## 0.1.0
+### Nov 16, 2026
 - Give root pucks a small press expansion and playful spring release.
-
 - Animate root pucks in and out with a playful scale overshoot; use `PuckMenu.visible` to animate menu visibility while retaining its position.
-
 - Add `ArcStyle` to customize menu arc colors and thickness.
 - Add optional menu IDs to automatically save and restore docked positions across navigation and app restarts.
 - Add multi-level menus with staggered opening and closing animations and adaptive arcs that can expand into full circles.
